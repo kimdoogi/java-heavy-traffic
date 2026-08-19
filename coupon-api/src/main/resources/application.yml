@@ -1,0 +1,65 @@
+spring:
+  application:
+    name: coupon-api
+  threads:
+    virtual:
+      enabled: ${VT:true}            # 핵심 실험 변수: true=버츄얼 쓰레드, false=플랫폼 쓰레드(Tomcat 풀)
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:coupon}
+    username: ${DB_USER:coupon}
+    password: ${DB_PASSWORD:coupon}
+    hikari:
+      maximum-pool-size: ${POOL_SIZE:20}   # 실험 변수 (E4)
+      minimum-idle: ${POOL_SIZE:20}
+      connection-timeout: ${POOL_CONN_TIMEOUT_MS:3000}
+      pool-name: coupon-hikari
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  lifecycle:
+    timeout-per-shutdown-phase: 10s
+
+server:
+  port: 8080
+  shutdown: graceful
+  tomcat:
+    threads:
+      max: ${TOMCAT_MAX_THREADS:200}        # VT=false 일 때만 의미 있음 (플랫폼 쓰레드 풀 크기)
+    max-connections: ${TOMCAT_MAX_CONNECTIONS:10000}
+    accept-count: ${TOMCAT_ACCEPT_COUNT:1000}
+    mbeanregistry:
+      enabled: true                         # tomcat_threads_* 메트릭 노출
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics,threaddump,env
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true          # p50/p95/p99를 Prometheus에서 histogram_quantile로 계산
+      slo:
+        http.server.requests: 50ms,100ms,200ms,500ms,1s,2s,5s
+
+external:
+  base-url: ${EXTERNAL_BASE_URL:http://localhost:8081}
+  connect-timeout-ms: ${EXTERNAL_CONNECT_TIMEOUT_MS:500}
+  read-timeout-ms: ${EXTERNAL_READ_TIMEOUT_MS:1000}     # 0 이면 타임아웃 없음 (E8-0 무방비 실험용)
+
+logging:
+  level:
+    root: INFO
+    com.example.coupon: INFO

@@ -108,7 +108,7 @@
 | 영역 | 선택 | 이유 |
 |---|---|---|
 | 언어/런타임 | Java 21 (LTS) | 버츄얼 쓰레드 정식(JEP 444). `-Djdk.tracePinnedThreads`로 pinning 관찰 가능 |
-| 프레임워크 | Spring Boot 3.3.x + **Spring MVC** (WebFlux 아님) | "블로킹 코드를 그대로 두고 VT만 켜서" 효과를 보는 게 목적. `spring.threads.virtual.enabled=true` 한 줄로 토글 |
+| 프레임워크 | Spring Boot **4.0.x** (→ wiki D-004; 계획 당시 3.3.x는 EOL) + **Spring MVC** (WebFlux 아님) | "블로킹 코드를 그대로 두고 VT만 켜서" 효과를 보는 게 목적. `spring.threads.virtual.enabled=true` 한 줄로 토글 |
 | 빌드 | Gradle (wrapper 포함) | 별도 설치 불필요 |
 | DB 접근 | Spring Data JPA (+ 필요시 `JdbcClient`) | 비관적/낙관적 락 학습에 JPA가 직관적 |
 | 커넥션 풀 | HikariCP | 풀 크기 실험의 핵심 변수 |

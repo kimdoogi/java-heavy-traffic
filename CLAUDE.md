@@ -27,6 +27,6 @@ Java 21 Virtual Thread 기반 선착순 쿠폰 서비스를 리소스 제한(CPU
 - 한국어로 작성. 코드·명령·지표명·에러 메시지는 원문 유지.
 
 ## 개발 규칙 (요약)
-- Java 21, Spring Boot 3.3.x, Gradle wrapper(전역 설치 없음). 실행/빌드/테스트 방법은 `wiki/howto/`에 둔다.
+- Java 21, Spring Boot 4.0.x (D-004), Gradle wrapper(전역 설치 없음). 실행/빌드/테스트 방법은 `wiki/howto/`에 둔다.
 - 실험은 `scripts/run-experiment.sh`로만 실행해 재현 가능하게 한다. 수동 실행했다면 명령을 journal에 그대로 남긴다.
 - 리소스 제한은 docker compose에서만 건다(프로파일 S/M/L, `PLAN.md` §2.1).

@@ -1,0 +1,6 @@
+// 루트: 공통 설정만. 각 서브프로젝트 build.gradle 참고.
+subprojects {
+    group = 'com.example'
+    version = '0.1.0'
+    repositories { mavenCentral() }
+}

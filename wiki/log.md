@@ -13,3 +13,5 @@ tags: [log]
 - 2026-08-19 | 외부 API 장애 테스트 상세화 | 3계층 장애 주입 × 방어 단계별 비교 설계 → PLAN.md §4.6 | [journal](journal/2026-08-19-plan-and-wiki-setup.md)
 - 2026-08-19 | 위키 체계 구축 | wiki/ 구조·템플릿·CLAUDE.md 워크플로우 규칙 생성 | [D-003](decisions/D-003-llm-wiki-workflow.md)
 - 2026-08-19 | GitHub 원격 연결 & 첫 푸시 | origin=kimdoogi/java-heavy-traffic, main 푸시(95dc114). 커밋 정책 확정 | [howto/git.md](howto/git.md)
+- 2026-08-19 | 1주차 뼈대 생성 | coupon-api/mock-external(Boot 4.0.7), compose(리소스 제한), Prometheus/Grafana, k6 6종, run-experiment.sh. smoke 통과 | [journal](journal/2026-08-19-skeleton.md)
+- 2026-08-19 | E1 계측 검증 & 베이스라인 | M/VT on ping: 피크 6,000rps, p99 88ms, CPU 97% (CPU 병목) | [E1](experiments/E1-baseline.md)

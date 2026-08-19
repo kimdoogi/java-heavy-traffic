@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: mock-external
+  threads:
+    virtual:
+      enabled: true        # mock 자체가 병목이 되면 안 되므로 항상 VT
+server:
+  port: 8081
+  tomcat:
+    max-connections: 20000
+    accept-count: 2000
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus,metrics
+  metrics:
+    tags:
+      application: ${spring.application.name}
+mock:
+  fault:
+    mode: ${FAULT_MODE:normal}      # normal | slow | error | hang | flapping
+    delay-ms: ${FAULT_DELAY_MS:300} # normal/slow 의 기본 지연
+    jitter-ms: ${FAULT_JITTER_MS:0}
+    fail-rate: ${FAULT_FAIL_RATE:0} # 0.0 ~ 1.0 (mode=error 에서 사용, normal 에서도 >0 이면 적용)
+    status: ${FAULT_STATUS:500}
+    hang-seconds: ${FAULT_HANG_SECONDS:300}
+    flap-period-seconds: ${FAULT_FLAP_PERIOD:10}  # flapping: period 동안 정상, 다음 period 동안 장애
