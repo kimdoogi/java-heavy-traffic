@@ -16,7 +16,7 @@ Java 21 Virtual Thread 기반 선착순 쿠폰 서비스를 리소스 제한(CPU
    - 새로 이해한 개념 → `wiki/concepts/<슬러그>.md` (면접에서 답할 수 있는 수준으로).
    - 실험 수행 → `wiki/experiments/E<N>-<슬러그>.md` (가설/설정/결과/해석). raw 데이터(k6 summary, docker stats)는 `results/`에 두고 링크.
 4. **작업 종료**: journal에 한 일·결과·남은 일 완성 → `wiki/log.md`에 한 줄 append → `wiki/index.md` 갱신(새 페이지 등록, 상태·다음 번호 갱신).
-5. **커밋**: 사용자가 승인한 경우에만, 작업 단위마다 커밋. 메시지는 journal 제목과 맞춘다.
+5. **커밋/푸시**: 작업 단위(journal)마다 커밋하고 세션 종료 시 `git push` (원격: github.com/kimdoogi/java-heavy-traffic, 2026-08-19 연결). 규칙은 `wiki/howto/git.md`. 문제 해결 커밋은 본문에 `P-NNN`을 남긴다.
 
 ## 기록 규칙
 - 모든 페이지 상단에 frontmatter(`title/date/status/tags/related`) 필수. 템플릿은 `wiki/_templates/`.

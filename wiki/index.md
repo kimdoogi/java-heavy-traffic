@@ -11,7 +11,7 @@ tags: [index]
 > 워크플로우 규칙: [../CLAUDE.md](../CLAUDE.md) · 사용법: [howto/wiki-workflow.md](howto/wiki-workflow.md)
 
 ## 현재 상태
-- **단계**: 계획 수립 완료, 1주차(뼈대 생성) 시작 전
+- **단계**: 계획 수립 완료, GitHub 연결 완료, 1주차(뼈대 생성) 시작 전
 - **진행 중 journal**: 없음
 - **열린 문제(open)**: 없음
 - **다음 번호**: P-001 · D-004
@@ -38,4 +38,5 @@ tags: [index]
 
 ## Howto (런북)
 - [wiki-workflow.md](howto/wiki-workflow.md) — 위키 사용법
+- [git.md](howto/git.md) — 원격/커밋 정책
 - (예정) run-experiment.md, grafana.md, k6.md
