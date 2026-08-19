@@ -1,0 +1,16 @@
+# Gradle / Java
+.gradle/
+build/
+out/
+*.class
+*.log
+# IDE
+.idea/
+*.iml
+.vscode/
+.DS_Store
+# 실험 raw 대용량 (summary json/md는 커밋, 원시 스트림은 제외)
+results/**/*.ndjson
+results/**/*.raw.json
+# env
+.env
