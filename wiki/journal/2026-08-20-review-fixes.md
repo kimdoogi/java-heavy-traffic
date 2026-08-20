@@ -20,7 +20,7 @@ related: [2026-08-20-code-review-skeleton.md]
 - summarize.py: summary.json 부재 시 한줄 에러 종료, docker stats `--` 샘플 skip.
 - k6: `stepStages()` 헬퍼(Math.round)로 4개 시나리오의 중복 stages 교체. 60-breakpoint.js를 스텝별 constant-arrival-rate 시나리오 + `{scenario:stepNN}` 스코프 threshold(abortOnFail)로 재설계 — 누적 threshold 희석 문제 해소.
 - 문서: PLAN.md Toxiproxy 8474→18081 정정, howto에 전환 명령 추가.
-- 검증(전부 실측): error failRate=0.3 → 60회 중 16회 500(≈27%) / hangSeconds:0 패치 허용·음수 400 / 미지 경로 3종 → `group="other"` 단일 시리즈 / `FAULT_MODE=SLOW`(대문자) 기동 성공 mode=slow / connect·read 타임아웃 0으로 기동+700ms 호출 성공 / MAX_RPS=250으로 k6 inspect 4파일 통과 / 파이프라인 exit 0 + meta.env에 mock_fault·effective_virtual 기록 / `--skip-up -v off` 불일치 → exit 1 / 컨테이너 env 전달 스팟체크(TOMCAT_MAX_CONNECTIONS 등) 통과.
+- 검증(전부 실측): error failRate=0.3 → 60회 중 16회 500(≈27%) / hangSeconds:0 패치 허용·음수 400 / 미지 경로 3종 → `group="other"` 단일 시리즈 / `FAULT_MODE=SLOW`(대문자) 기동 성공 mode=slow / connect·read 타임아웃 0으로 기동+700ms 호출 성공 / MAX_RPS=250으로 k6 inspect 4파일 통과 *(주의: 사후 확인 결과 k6 inspect는 OS env를 읽지 않아 이 검증은 기본값 검증이었음 — [2차 리뷰](2026-08-20-code-review-round2.md) 참고. 코드 수정 자체는 유효)* / 파이프라인 exit 0 + meta.env에 mock_fault·effective_virtual 기록 / `--skip-up -v off` 불일치 → exit 1 / 컨테이너 env 전달 스팟체크(TOMCAT_MAX_CONNECTIONS 등) 통과.
 
 ## 결과
 - 리뷰 15건 전부 수정 + 실측 검증 완료. 컷라인 아래 후보 중 수정과 겹친 것(FaultConfig 바인딩·sentinel·reset 재사용·stages 중복·GET/POST는 유지)도 함께 정리.
