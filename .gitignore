@@ -12,5 +12,6 @@ out/
 # 실험 raw 대용량 (summary json/md는 커밋, 원시 스트림은 제외)
 results/**/*.ndjson
 results/**/*.raw.json
+results/**/effective-env.json
 # env
 .env

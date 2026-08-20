@@ -18,3 +18,4 @@ tags: [log]
 - 2026-08-20 | 1주차 뼈대 코드 리뷰 | 11개 병렬 앵글로 결함 15건 확정(가짜 실험기록 3건, 기동 크래시 2건, k6 중단, 카디널리티 누수 등) + 개선 후보 다수 | [journal](journal/2026-08-20-code-review-skeleton.md)
 - 2026-08-20 | 리뷰 결함 15건 수정 | 전부 수정+실측 검증(부분 장애·hang 상한·실효 설정 기록·스텝별 breakpoint 등). smoke/파이프라인 회귀 통과 | [journal](journal/2026-08-20-review-fixes.md)
 - 2026-08-20 | 수정 커밋 2차 리뷰 | 신규 결함 15건 확정(breakpoint VU 폭탄·delayAbortEval 전역 기준·status 검증 누락 등). k6 inspect가 OS env를 무시함을 발견(지난 검증 1건 무효) | [journal](journal/2026-08-20-code-review-round2.md)
+- 2026-08-20 | 2차 리뷰 15건 수정 | E9 재설계(VU 예산·스텝 유예·dropped 가드·exit 매핑), 실효 검증 전수화(verify-effective.py), status/delay 상한, hang cap 문서화. 전부 실측 | [journal](journal/2026-08-20-review2-fixes.md)

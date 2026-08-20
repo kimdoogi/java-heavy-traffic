@@ -41,5 +41,5 @@ related: [2026-08-20-review-fixes.md, 2026-08-20-code-review-skeleton.md]
 - k6 threshold의 delayAbortEval·서브메트릭 평가는 모두 테스트 전역 기준 — 시나리오 단위 시간 개념이 없다.
 
 ## 남은 일
-- [ ] 15건 수정 (사용자 승인 후). 특히 1·2·10·11은 E9 방법론이라 묶어서 재설계 권장
-- [ ] 지난 journal의 "k6 inspect 통과" 문구에 무효 검증 주석 달기
+- [x] 15건 수정 완료 → [2026-08-20-review2-fixes](2026-08-20-review2-fixes.md) (E9는 묶어서 재설계)
+- [x] 지난 journal에 무효 검증 주석 완료 (2차 리뷰 커밋에 포함)

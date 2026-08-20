@@ -53,9 +53,9 @@ OUT="results/$NAME"; mkdir -p "$OUT"
 {
   echo "name=$NAME"; echo "date=$(date +%Y-%m-%dT%H:%M:%S%z)"; echo "git=$(git rev-parse --short HEAD 2>/dev/null || echo none)"
   echo "profile=$PROFILE cpus=$APP_CPUS mem=$APP_MEM xmx=$XMX"; echo "VT=$VT_VAL"; echo "APP_JAVA_OPTS=$APP_JAVA_OPTS"
-  echo "POOL_SIZE=${POOL_SIZE:-20(default)}"; echo "ISSUE_STRATEGY=${ISSUE_STRATEGY:-default}"
+  echo "POOL_SIZE=${POOL_SIZE:-20(default)}"; echo "ISSUE_STRATEGY=${ISSUE_STRATEGY:-default}"; echo "# ISSUE_STRATEGY는 3주차 전략 구현 전까지 동작에 영향 없음 (property로만 소비)"
   echo "extra_env=${EXTRA_ENV[*]+"${EXTRA_ENV[*]}"}"; echo "scenario=$SCRIPT"; echo "k6_extra=${K6_EXTRA[*]+"${K6_EXTRA[*]}"}"
-  env | grep -E '^(SLEEP_MS|DELAY_MS|MAX_RPS|START_RPS|STEP_DUR|HASH_N|ENDPOINT|RAMP|P99_MS|ERR_RATE|MAX_VUS|DURATION|EXTERNAL_[A-Z_]+|FAULT_[A-Z_]+|PG_MAX_CONNECTIONS|TOMCAT_MAX_THREADS)=' || true
+  env | grep -E '^(SLEEP_MS|DELAY_MS|MAX_RPS|START_RPS|STEP_DUR|STEP_DUR_S|STEPS|HASH_N|ENDPOINT|P99_MS|ERR_RATE|MAX_VUS|DURATION|BASE_URL|EXTERNAL_[A-Z_]+|FAULT_[A-Z_]+|PG_[A-Z_]+|POOL_CONN_TIMEOUT_MS|TOMCAT_[A-Z_]+)=' || true
 } > "$OUT/meta.env"
 echo "== experiment $NAME =="; cat "$OUT/meta.env"
 
@@ -78,17 +78,41 @@ for i in $(seq 1 60); do
 done
 
 # 이전 실험에서 /admin/fault 로 주입한 런타임 장애가 남아있지 않도록 항상 초기화하고, 현재 fault를 기록
-curl -sf -X POST http://localhost:8081/admin/fault/reset > /dev/null
-echo "mock_fault=$(curl -sf http://localhost:8081/admin/fault)" >> "$OUT/meta.env"
+# (각 curl 실패는 명확한 메시지로 즉시 실패한다 — $()는 set -e에 안 잡히거나 무메시지로 잡히므로 개별 검사)
+if ! curl -sf -X POST http://localhost:8081/admin/fault/reset > /dev/null; then
+  echo "ERROR: mock fault reset 실패 — mock-external 상태 확인 (docker compose logs mock-external)" >&2; exit 1
+fi
+if ! MOCK_FAULT=$(curl -sf http://localhost:8081/admin/fault); then
+  echo "ERROR: mock fault 조회 실패" >&2; exit 1
+fi
+echo "mock_fault=$MOCK_FAULT" >> "$OUT/meta.env"
 
-# 실효 설정 검증: --skip-up 등으로 컨테이너 설정과 요청 설정이 어긋나면 가짜 기록이 되므로 즉시 실패
-EFF_VT=$(curl -sf http://localhost:8080/api/ping | grep -o '"virtual":[a-z]*' | cut -d: -f2)
+# 실효 설정 검증 1: 동작 레벨 — /api/ping 의 virtual 필드로 실제 쓰레드 모드 확인
+if ! PING_BODY=$(curl -sf http://localhost:8080/api/ping); then
+  echo "ERROR: /api/ping 호출 실패 — 앱이 health 통과 후 비정상" >&2; exit 1
+fi
+if ! EFF_VT=$(printf '%s' "$PING_BODY" | python3 -c 'import json,sys; print(str(json.load(sys.stdin)["virtual"]).lower())' 2>/dev/null); then
+  echo "ERROR: /api/ping 응답 파싱 실패: $PING_BODY" >&2; exit 1
+fi
 echo "effective_virtual=$EFF_VT" >> "$OUT/meta.env"
 if [[ "$EFF_VT" != "$VT_VAL" ]]; then
   echo "ERROR: VT 불일치 — 요청 $VT_VAL vs 실제 $EFF_VT (--skip-up 으로 재적용이 생략됐거나 컨테이너가 갱신 안 됨)" >&2
   exit 1
 fi
-curl -sf http://localhost:8080/actuator/env > "$OUT/effective-env.json"   # 실효 설정 전체 스냅샷
+
+# 실효 설정 검증 2: env 레벨 — 스냅샷(show-values=always)과 요청 knob 전수 대조
+if ! curl -sf http://localhost:8080/actuator/env -o "$OUT/effective-env.json"; then
+  rm -f "$OUT/effective-env.json"
+  echo "ERROR: /actuator/env 스냅샷 실패" >&2; exit 1
+fi
+CONTAINER_VARS=" VT POOL_SIZE TOMCAT_MAX_THREADS TOMCAT_MAX_CONNECTIONS TOMCAT_ACCEPT_COUNT POOL_CONN_TIMEOUT_MS EXTERNAL_BASE_URL EXTERNAL_CONNECT_TIMEOUT_MS EXTERNAL_READ_TIMEOUT_MS ISSUE_STRATEGY "
+CHECKS=("VT=$VT_VAL")
+[[ -n "${POOL_SIZE:-}" ]] && CHECKS+=("POOL_SIZE=$POOL_SIZE")
+for kv in "${EXTRA_ENV[@]+"${EXTRA_ENV[@]}"}"; do
+  k=${kv%%=*}
+  [[ "$CONTAINER_VARS" == *" $k "* ]] && CHECKS+=("$kv")
+done
+python3 scripts/verify-effective.py "$OUT/effective-env.json" "${CHECKS[@]}"
 
 # docker stats 샘플러 (2초 간격) → CPU/메모리 피크 기록
 ( while true; do
@@ -111,6 +135,12 @@ k6 run --tag "testid=$NAME" -o experimental-prometheus-rw \
 K6_EXIT=${PIPESTATUS[0]}
 set -e
 stop_stats
+
+# breakpoint 시나리오는 threshold abort(=한계 도달)가 정상 종료다 → 배치/자동화가 실패로 읽지 않게 성공 처리
+if [[ $K6_EXIT -eq 99 && "$SCRIPT" == *breakpoint* ]]; then
+  echo "-- breakpoint: threshold abort = 한계 도달 (k6 exit 99 → 0 처리). 한계 스텝은 k6.log의 THRESHOLDS 블록 참고"
+  K6_EXIT=0
+fi
 
 if [[ -f "$OUT/summary.json" ]]; then
   python3 scripts/summarize.py "$OUT"

@@ -11,7 +11,7 @@ tags: [index]
 > 워크플로우 규칙: [../CLAUDE.md](../CLAUDE.md) · 사용법: [howto/wiki-workflow.md](howto/wiki-workflow.md)
 
 ## 현재 상태
-- **단계**: 2차 리뷰 완료(신규 15건 확정, 수정 대기). 다음: 2차 결함 수정 → 2주차 E2/E3/E5
+- **단계**: 2차 리뷰 15건 수정 완료. 다음: 2주차 E2/E3/E5 (VT 핵심 실험)
 - **진행 중 journal**: 없음
 - **열린 문제(open)**: 없음
 - **다음 번호**: P-001 · D-005
@@ -20,6 +20,7 @@ tags: [index]
 - [PLAN.md](../PLAN.md) — 실험 E1~E13, 뼈대 구조, 로컬↔클라우드 매핑, 로드맵
 
 ## Journal (작업 기록, 최신순)
+- [2026-08-20 2차 리뷰 결함 15건 수정](journal/2026-08-20-review2-fixes.md) — done
 - [2026-08-20 수정 커밋 2차 코드 리뷰](journal/2026-08-20-code-review-round2.md) — done (수정 대기)
 - [2026-08-20 리뷰 결함 15건 수정](journal/2026-08-20-review-fixes.md) — done
 - [2026-08-20 1주차 뼈대 코드 리뷰](journal/2026-08-20-code-review-skeleton.md) — done (수정은 별도 작업)

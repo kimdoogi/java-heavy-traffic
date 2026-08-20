@@ -159,7 +159,7 @@ java-heavy-traffic/
 │   ├── 30-cpu-bound.js
 │   ├── 40-db-read.js
 │   ├── 50-flash-sale.js            # 선착순 (N명 동시 발급) + 사후 검증
-│   ├── 60-breakpoint.js            # ramping-arrival-rate, 한계점 탐색
+│   ├── 60-breakpoint.js            # 스텝별 constant-arrival-rate + 스텝 스코프 threshold, 한계점 탐색
 │   ├── 70-spike.js
 │   └── 80-soak.js
 ├── monitoring/
@@ -215,7 +215,7 @@ java-heavy-traffic/
 | **E6** | 선착순 정합성 | 전략 none/db-pessimistic/db-optimistic/redis, 쿠폰 1,000개 | 5,000 VU 동시 1회 발급 + 사후 DB 검증 | none은 초과 발급 발생, 나머지는 0건. 처리량·p99·DB CPU·재시도 횟수 비교 |
 | **E7** | 멱등성 / 중복 요청 | 같은 userId 재시도 폭주, Idempotency-Key | per-vu-iterations 10회 | 중복 발급 0건, 응답 일관성 |
 | **E8** | 느린/장애 외부 의존성 (상세: §4.6) | 3계층 장애 주입(앱 mock·Toxiproxy·프로세스) × 방어 단계(무방비→타임아웃→재시도→CB→벌크헤드→비동기), `/issue-and-notify` | constant-arrival-rate + 장애 타임라인 | 타임아웃 없으면 VT 요청 무한 누적·힙 증가·전체 지연 전파. 타임아웃+CB+벌크헤드로 빠른 실패 → 정상 경로 보호, 회복 시간 측정 |
-| **E9** | 한계점(Breakpoint) 탐색 | S/M/L × VT on, `/issue-and-notify`(실전형) | ramping-arrival-rate 100→N rps, threshold 초과 시 abort | 프로파일별 "p99 500ms·에러 1% 유지 최대 RPS" 표. 이 표가 **최종 결과물** |
+| **E9** | 한계점(Breakpoint) 탐색 | S/M/L × VT on, `/issue-and-notify`(실전형) | **스텝별 constant-arrival-rate 시나리오**(STEPS×STEP_DUR_S, 스텝 스코프 threshold + dropped_iterations 가드, abort=한계 도달) | 프로파일별 "p99 500ms·에러 1% 유지 최대 RPS" 표. 이 표가 **최종 결과물** |
 | **E10** | 메모리 / GC | `-Xmx` 256/512/1024, G1 vs Generational ZGC, VT 대량 생성 | E2 고부하 | OOM 재현 지점, GC pause가 p99에 미치는 영향 |
 | **E11** | Soak (장시간) | M 프로파일, 한계의 70% 부하 | 30~60분 | 메모리·커넥션 누수, 시간 경과에 따른 p99 드리프트 |
 | **E12** | 수평 확장 | `replicas` 1/2/3 + nginx, 총 리소스 동일 | E9 반복 | scale-up vs scale-out 효율, DB가 공통 병목이 되는 지점 |
@@ -241,7 +241,7 @@ scripts/run-experiment.sh --profile M --vt on --strategy redis --pool 20 --scena
 #### (1) 장애 주입 3계층
 | 계층 | 도구 | 재현 장애 | 비고 |
 |---|---|---|---|
-| 애플리케이션 | `mock-external`의 `POST /admin/fault` `{mode: normal\|slow\|error\|hang\|flapping, delayMs, jitterMs, failRate, status}` | 느린 응답(300→5000ms), 5xx 비율, 응답 없이 연결 유지(hang), 간헐적 장애 | **부하 도중 런타임 토글** 가능. 요청 단위 파라미터(`/notify?delayMs=`)도 병행 지원 |
+| 애플리케이션 | `mock-external`의 `POST /admin/fault` `{mode: normal\|slow\|error\|hang\|flapping, delayMs, jitterMs, failRate, status}` | 느린 응답(300→5000ms), 5xx 비율, 응답 없이 연결 유지(hang), 간헐적 장애 | **부하 도중 런타임 토글** 가능. 요청 단위 파라미터(`/notify?delayMs=`)도 병행 지원. **hang 동시 상한 `FAULT_MAX_HANGS`(기본 2000)** — 초과분은 즉시 503(hang-rejected). 동시 hang ≈ rate×hangSeconds 로 사이징할 것. delay 상한 60s |
 | 네트워크 | Toxiproxy 컨테이너 (데이터 경로 app → toxiproxy:18081 → mock, 제어는 :8474 REST API. 전환: `--env EXTERNAL_BASE_URL=http://toxiproxy:18081`) | TCP latency, 바이트 미수신(read timeout), RST(reset_peer), 대역폭 제한, 전체 차단 | HTTP API로 부하 중 toxic 추가/삭제. 앱 mock으로 못 만드는 "진짜 네트워크 장애" |
 | 프로세스 | `docker compose stop` / `docker pause mock-external` | connection refused / SYN 무응답(connect timeout) | 완전 다운과 재기동 후 회복 관찰 |
 

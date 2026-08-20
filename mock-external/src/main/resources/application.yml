@@ -1,6 +1,9 @@
 spring:
   application:
     name: mock-external
+  jackson:
+    mapper:
+      accept-case-insensitive-enums: true   # /admin/fault 패치의 "SLOW"도 허용 (기동 env relaxed binding과 대칭)
   threads:
     virtual:
       enabled: true        # mock 자체가 병목이 되면 안 되므로 항상 VT

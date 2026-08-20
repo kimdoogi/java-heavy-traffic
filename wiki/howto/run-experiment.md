@@ -17,6 +17,8 @@ scripts/run-experiment.sh -n <이름> -p S|M|L -v on|off -s load/<시나리오>.
 - 프로파일 → `APP_CPUS/APP_MEM/-Xmx` 매핑 후 `docker compose up -d` (바뀐 서비스만 재생성)
 - health 대기 → docker stats 샘플러 → k6(remote-write to Prometheus, `testid=<이름>` 태그) → `results/<이름>/summary.md`
 - 시나리오 파라미터는 env로: `SLEEP_MS=300 MAX_RPS=2000 STEP_DUR=30s scripts/run-experiment.sh ...`
+- **breakpoint(E9)만 지정법이 다름**: `STEPS=10 STEP_DUR_S=30`(숫자 초; `STEP_DUR=30s`도 허용). 한계에 닿으면 k6가 threshold abort로 끝나는 게 **정상**이고 스크립트가 exit 0으로 처리한다 — 한계 스텝은 `k6.log`의 THRESHOLDS 블록에서 마지막 통과 스텝을 읽는다.
+- **hang 실험(E8)**: 동시 hang ≈ rate×hangSeconds. 기본 상한 `FAULT_MAX_HANGS=2000` 초과분은 즉시 503(hang-rejected 카운터)이므로, 순수 hang을 보려면 상한을 수요보다 크게 잡거나 rate를 낮출 것.
 
 ## 결과 보기
 - 표: `results/<이름>/summary.md` (rps, p50/p95/p99, failed, dropped, maxVUs, app CPU 피크, 메모리)

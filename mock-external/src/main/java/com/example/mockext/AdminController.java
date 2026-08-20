@@ -41,10 +41,13 @@ public class AdminController {
 
     @PostMapping
     public ResponseEntity<?> set(@RequestBody FaultPatch p) {
-        if ((p.delayMs() != null && p.delayMs() < 0) || (p.jitterMs() != null && p.jitterMs() < 0)
+        // 상한: delay/jitter 60s(무제한 커넥션 점유 방지), hang/flap 1h, status는 유효 HTTP 코드만
+        if ((p.delayMs() != null && (p.delayMs() < 0 || p.delayMs() > 60_000))
+                || (p.jitterMs() != null && (p.jitterMs() < 0 || p.jitterMs() > 60_000))
                 || (p.failRate() != null && (p.failRate() < 0 || p.failRate() > 1))
-                || (p.hangSeconds() != null && p.hangSeconds() < 0)
-                || (p.flapPeriodSeconds() != null && p.flapPeriodSeconds() < 1)) {
+                || (p.status() != null && (p.status() < 100 || p.status() > 999))
+                || (p.hangSeconds() != null && (p.hangSeconds() < 0 || p.hangSeconds() > 3600))
+                || (p.flapPeriodSeconds() != null && (p.flapPeriodSeconds() < 1 || p.flapPeriodSeconds() > 3600))) {
             return ResponseEntity.badRequest().body(Map.of("error", "invalid_patch", "patch", p));
         }
         Fault updated = current.updateAndGet(cur -> new Fault(
