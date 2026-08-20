@@ -22,7 +22,8 @@ mock:
     mode: ${FAULT_MODE:normal}      # normal | slow | error | hang | flapping
     delay-ms: ${FAULT_DELAY_MS:300} # normal/slow 의 기본 지연
     jitter-ms: ${FAULT_JITTER_MS:0}
-    fail-rate: ${FAULT_FAIL_RATE:0} # 0.0 ~ 1.0 (mode=error 에서 사용, normal 에서도 >0 이면 적용)
+    fail-rate: ${FAULT_FAIL_RATE:0} # 0.0 ~ 1.0. mode=error: >0이면 그 확률로 부분 실패, 0이면 100% 실패. normal에서도 >0이면 적용
     status: ${FAULT_STATUS:500}
     hang-seconds: ${FAULT_HANG_SECONDS:300}
     flap-period-seconds: ${FAULT_FLAP_PERIOD:10}  # flapping: period 동안 정상, 다음 period 동안 장애
+    max-concurrent-hangs: ${FAULT_MAX_HANGS:2000}  # hang 동시 상한 — 초과분은 즉시 503 (커넥터/admin API 보호)

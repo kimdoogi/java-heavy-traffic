@@ -70,6 +70,25 @@ for i in $(seq 1 60); do
   if [[ $i -eq 60 ]]; then echo "coupon-api not healthy" >&2; docker compose logs --tail=50 coupon-api; exit 1; fi
   sleep 2
 done
+echo "-- waiting for mock-external health..."
+for i in $(seq 1 60); do
+  if curl -sf http://localhost:8081/actuator/health | grep -q '"status":"UP"'; then echo "   UP after ${i}x2s"; break; fi
+  if [[ $i -eq 60 ]]; then echo "mock-external not healthy" >&2; docker compose logs --tail=50 mock-external; exit 1; fi
+  sleep 2
+done
+
+# 이전 실험에서 /admin/fault 로 주입한 런타임 장애가 남아있지 않도록 항상 초기화하고, 현재 fault를 기록
+curl -sf -X POST http://localhost:8081/admin/fault/reset > /dev/null
+echo "mock_fault=$(curl -sf http://localhost:8081/admin/fault)" >> "$OUT/meta.env"
+
+# 실효 설정 검증: --skip-up 등으로 컨테이너 설정과 요청 설정이 어긋나면 가짜 기록이 되므로 즉시 실패
+EFF_VT=$(curl -sf http://localhost:8080/api/ping | grep -o '"virtual":[a-z]*' | cut -d: -f2)
+echo "effective_virtual=$EFF_VT" >> "$OUT/meta.env"
+if [[ "$EFF_VT" != "$VT_VAL" ]]; then
+  echo "ERROR: VT 불일치 — 요청 $VT_VAL vs 실제 $EFF_VT (--skip-up 으로 재적용이 생략됐거나 컨테이너가 갱신 안 됨)" >&2
+  exit 1
+fi
+curl -sf http://localhost:8080/actuator/env > "$OUT/effective-env.json"   # 실효 설정 전체 스냅샷
 
 # docker stats 샘플러 (2초 간격) → CPU/메모리 피크 기록
 ( while true; do
@@ -93,5 +112,10 @@ K6_EXIT=${PIPESTATUS[0]}
 set -e
 stop_stats
 
-python3 scripts/summarize.py "$OUT"
+if [[ -f "$OUT/summary.json" ]]; then
+  python3 scripts/summarize.py "$OUT"
+else
+  echo "!! summary.json 없음 — k6가 실행에 실패한 것으로 보임 (exit=$K6_EXIT). $OUT/k6.log 확인" >&2
+fi
 echo "-- k6 exit=$K6_EXIT (threshold 실패 시 99). 결과: $OUT/  Grafana: http://localhost:3000/d/heavy-traffic?var-testid=$NAME"
+exit $K6_EXIT

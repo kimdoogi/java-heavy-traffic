@@ -4,7 +4,10 @@ import json, sys, os, re
 
 out = sys.argv[1]
 meta = dict(l.split("=", 1) for l in open(f"{out}/meta.env", encoding="utf-8").read().splitlines() if "=" in l)
-s = json.load(open(f"{out}/summary.json"))
+try:
+    s = json.load(open(f"{out}/summary.json"))
+except FileNotFoundError:
+    sys.exit(f"summarize: {out}/summary.json 없음 — k6가 summary를 만들지 못함 (k6.log 확인)")
 m = s.get("metrics", {})
 
 def g(name, key, default=float("nan")):
@@ -36,7 +39,10 @@ try:
     for line in open(f"{out}/docker-stats.csv", encoding="utf-8"):
         parts = line.strip().split(",")
         if len(parts) < 4 or "coupon-api" not in parts[1]: continue
-        cpu = float(parts[2].rstrip("%"))
+        try:
+            cpu = float(parts[2].rstrip("%"))
+        except ValueError:      # 컨테이너 재시작/OOM 중이면 docker stats가 '--' 를 찍는다
+            continue
         if cpu > cpu_max: cpu_max, mem_at_max = cpu, parts[3]
     if cpu_max >= 0: peak_cpu, peak_mem = cpu_max, mem_at_max
 except FileNotFoundError:

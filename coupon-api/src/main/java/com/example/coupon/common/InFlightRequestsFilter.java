@@ -2,6 +2,7 @@ package com.example.coupon.common;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -52,11 +53,20 @@ public class InFlightRequestsFilter extends OncePerRequestFilter {
         return counter;
     }
 
-    /** /api/io/sleep → "io", /api/coupons/1/issue → "coupons", /actuator/... → "actuator" */
+    // 게이지 태그는 허용목록으로 제한한다: 임의 404 경로가 시리즈를 무한 생성하면 안 됨 (카디널리티 누수)
+    private static final Set<String> KNOWN_GROUPS = Set.of("ping", "io", "cpu", "pin", "db", "coupons", "actuator");
+
+    /** /api/io/sleep → "io", /api/coupons/1/issue → "coupons", /actuator/... → "actuator", 그 외 전부 → "other" */
     static String groupOf(String uri) {
-        String[] parts = uri.split("/");
-        if (parts.length >= 3 && "api".equals(parts[1])) return parts[2];
-        if (parts.length >= 2 && !parts[1].isEmpty()) return parts[1];
-        return "root";
+        String seg;
+        if (uri.startsWith("/api/")) {
+            int end = uri.indexOf('/', 5);
+            seg = end < 0 ? uri.substring(5) : uri.substring(5, end);
+        } else if (uri.startsWith("/actuator")) {
+            seg = "actuator";
+        } else {
+            return "other";
+        }
+        return KNOWN_GROUPS.contains(seg) ? seg : "other";
     }
 }

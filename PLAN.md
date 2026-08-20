@@ -242,7 +242,7 @@ scripts/run-experiment.sh --profile M --vt on --strategy redis --pool 20 --scena
 | 계층 | 도구 | 재현 장애 | 비고 |
 |---|---|---|---|
 | 애플리케이션 | `mock-external`의 `POST /admin/fault` `{mode: normal\|slow\|error\|hang\|flapping, delayMs, jitterMs, failRate, status}` | 느린 응답(300→5000ms), 5xx 비율, 응답 없이 연결 유지(hang), 간헐적 장애 | **부하 도중 런타임 토글** 가능. 요청 단위 파라미터(`/notify?delayMs=`)도 병행 지원 |
-| 네트워크 | Toxiproxy 컨테이너 (app → toxiproxy:8474 → mock) | TCP latency, 바이트 미수신(read timeout), RST(reset_peer), 대역폭 제한, 전체 차단 | HTTP API로 부하 중 toxic 추가/삭제. 앱 mock으로 못 만드는 "진짜 네트워크 장애" |
+| 네트워크 | Toxiproxy 컨테이너 (데이터 경로 app → toxiproxy:18081 → mock, 제어는 :8474 REST API. 전환: `--env EXTERNAL_BASE_URL=http://toxiproxy:18081`) | TCP latency, 바이트 미수신(read timeout), RST(reset_peer), 대역폭 제한, 전체 차단 | HTTP API로 부하 중 toxic 추가/삭제. 앱 mock으로 못 만드는 "진짜 네트워크 장애" |
 | 프로세스 | `docker compose stop` / `docker pause mock-external` | connection refused / SYN 무응답(connect timeout) | 완전 다운과 재기동 후 회복 관찰 |
 
 #### (2) 방어 수단 단계별 실험

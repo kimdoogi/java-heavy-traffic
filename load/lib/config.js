@@ -23,6 +23,11 @@ export function rampingRate({ startRate, stages, preAllocatedVUs = 200, maxVUs =
   };
 }
 
+// 단계 램프 생성기: target은 반드시 정수여야 한다 (k6가 62.5 같은 값이면 파싱 단계에서 중단).
+export function stepStages(max, stepDur, fractions = [0.25, 0.5, 0.75, 1, 1]) {
+  return fractions.map((f) => ({ target: Math.round(max * f), duration: stepDur }));
+}
+
 export function num(name, def) {
   const v = __ENV[name];
   return v === undefined || v === '' ? def : Number(v);

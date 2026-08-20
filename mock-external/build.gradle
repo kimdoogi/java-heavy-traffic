@@ -22,3 +22,8 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+// Dockerfile의 build/libs/*-.jar 글롭이 유일한 파일을 집도록 plain jar는 만들지 않는다
+tasks.named('jar') {
+	enabled = false
+}

@@ -40,7 +40,18 @@ services:
       JAVA_TOOL_OPTIONS: "-Xmx512m"
       FAULT_MODE: ${FAULT_MODE:-normal}
       FAULT_DELAY_MS: ${FAULT_DELAY_MS:-300}
+      FAULT_JITTER_MS: ${FAULT_JITTER_MS:-0}
+      FAULT_FAIL_RATE: ${FAULT_FAIL_RATE:-0}
+      FAULT_STATUS: ${FAULT_STATUS:-500}
+      FAULT_HANG_SECONDS: ${FAULT_HANG_SECONDS:-300}
+      FAULT_FLAP_PERIOD: ${FAULT_FLAP_PERIOD:-10}
+      FAULT_MAX_HANGS: ${FAULT_MAX_HANGS:-2000}
     ports: ["8081:8081"]
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/8081'"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
     deploy:
       resources:
         limits: { cpus: "${MOCK_CPUS:-1}", memory: "${MOCK_MEM:-1g}" }
@@ -62,6 +73,10 @@ services:
       VT: ${VT:-true}
       POOL_SIZE: ${POOL_SIZE:-20}
       TOMCAT_MAX_THREADS: ${TOMCAT_MAX_THREADS:-200}
+      TOMCAT_MAX_CONNECTIONS: ${TOMCAT_MAX_CONNECTIONS:-10000}
+      TOMCAT_ACCEPT_COUNT: ${TOMCAT_ACCEPT_COUNT:-1000}
+      POOL_CONN_TIMEOUT_MS: ${POOL_CONN_TIMEOUT_MS:-3000}
+      ISSUE_STRATEGY: ${ISSUE_STRATEGY:-redis}
       DB_HOST: postgres
       REDIS_HOST: redis
       EXTERNAL_BASE_URL: ${EXTERNAL_BASE_URL:-http://mock-external:8081}
@@ -71,7 +86,7 @@ services:
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
-      mock-external: { condition: service_started }
+      mock-external: { condition: service_healthy }
     deploy:
       resources:
         limits: { cpus: "${APP_CPUS:-1}", memory: "${APP_MEM:-1g}" }

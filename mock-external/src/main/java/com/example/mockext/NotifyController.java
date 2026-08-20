@@ -1,11 +1,13 @@
 package com.example.mockext;
 
 import java.util.Map;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.example.mockext.FaultConfig.Fault;
+import com.example.mockext.FaultConfig.FaultProperties;
 import com.example.mockext.FaultConfig.Mode;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -18,20 +20,25 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 느린 외부 서비스(알림/결제) 흉내. 우선순위: 요청 파라미터(delayMs/failRate) > 전역 fault 설정.
+ * hang 동시 개수는 maxConcurrentHangs로 제한한다 — 무제한이면 rate×hangSeconds개의 커넥션이
+ * 쌓여 max-connections를 고갈시키고 /admin/fault 제어 API까지 잠긴다.
  */
 @RestController
 @RequestMapping("/notify")
 public class NotifyController {
 
     private final AtomicReference<Fault> current;
+    private final Semaphore hangSlots;
     private final AtomicLong seq = new AtomicLong();
-    private final Counter ok, failed, hung;
+    private final Counter ok, failed, hung, hangRejected;
 
-    public NotifyController(AtomicReference<Fault> current, MeterRegistry registry) {
+    public NotifyController(AtomicReference<Fault> current, FaultProperties props, MeterRegistry registry) {
         this.current = current;
+        this.hangSlots = new Semaphore(props.maxConcurrentHangs());
         this.ok = registry.counter("mock.notify", "outcome", "ok");
         this.failed = registry.counter("mock.notify", "outcome", "failed");
         this.hung = registry.counter("mock.notify", "outcome", "hung");
+        this.hangRejected = registry.counter("mock.notify", "outcome", "hang_rejected");
     }
 
     @GetMapping
@@ -54,8 +61,16 @@ public class NotifyController {
         Mode mode = effectiveMode(f);
 
         if (mode == Mode.hang) {
-            hung.increment();
-            Thread.sleep(f.hangSeconds() * 1000);           // 응답을 주지 않고 연결만 유지 (read timeout 유도)
+            if (!hangSlots.tryAcquire()) {
+                hangRejected.increment();
+                return ResponseEntity.status(503).body(Map.of("id", id, "mode", "hang-rejected"));
+            }
+            try {
+                hung.increment();
+                Thread.sleep(f.hangSeconds() * 1000);   // 응답을 주지 않고 연결만 유지 (read timeout 유도)
+            } finally {
+                hangSlots.release();
+            }
             return ResponseEntity.status(f.status()).body(Map.of("id", id, "mode", "hang-released"));
         }
 
@@ -63,7 +78,9 @@ public class NotifyController {
         if (f.jitterMs() > 0) delay += ThreadLocalRandom.current().nextLong(f.jitterMs() + 1);
         if (delay > 0) Thread.sleep(delay);
 
-        double rate = failRate != null ? failRate : (mode == Mode.error ? Math.max(f.failRate(), 1.0) : f.failRate());
+        // error 모드: fail-rate가 설정돼 있으면 그 확률로(부분 장애), 아니면 100% 실패
+        double rate = failRate != null ? failRate
+                : (mode == Mode.error ? (f.failRate() > 0 ? f.failRate() : 1.0) : f.failRate());
         if (rate > 0 && ThreadLocalRandom.current().nextDouble() < rate) {
             failed.increment();
             return ResponseEntity.status(f.status())

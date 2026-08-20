@@ -47,5 +47,5 @@ related: [2026-08-19-skeleton.md]
 - k6 threshold는 누적 통계 기준 — breakpoint 측정 설계에 직접 영향.
 
 ## 남은 일 / 다음 단계
-- [ ] 15건 수정 (사용자 승인 후) — 수정 커밋에 이 journal 참조
-- [ ] 수정 후 smoke + E1 재실행으로 회귀 확인
+- [x] 15건 수정 완료 → [2026-08-20-review-fixes](2026-08-20-review-fixes.md)
+- [x] 수정 후 파이프라인 회귀 확인 (FIX-check 런, VT 불일치 가드 테스트)

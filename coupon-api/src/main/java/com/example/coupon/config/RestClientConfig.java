@@ -19,10 +19,12 @@ public class RestClientConfig {
 
     @Bean
     public RestClient externalRestClient(ExternalProperties props) {
-        HttpClient httpClient = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)
-                .connectTimeout(Duration.ofMillis(props.connectTimeoutMs()))
-                .build();
+        HttpClient.Builder httpClientBuilder = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1);
+        if (props.connectTimeoutMs() > 0) {              // 0 = 무제한 (E8-0), Duration.ZERO는 IAE
+            httpClientBuilder.connectTimeout(Duration.ofMillis(props.connectTimeoutMs()));
+        }
+        HttpClient httpClient = httpClientBuilder.build();
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
         if (props.readTimeoutMs() > 0) {
             factory.setReadTimeout(Duration.ofMillis(props.readTimeoutMs()));

@@ -34,6 +34,9 @@ curl -s localhost:8080/actuator/prometheus | grep http_inflight   # 지표 직�
 curl -s -G localhost:9090/api/v1/query --data-urlencode 'query=max_over_time(http_inflight_requests{group="io"}[5m])'   # PromQL ({}는 -G --data-urlencode 필수)
 curl -s -X POST localhost:8081/admin/fault -H 'content-type: application/json' -d '{"mode":"slow","delayMs":2000}'  # 장애 주입
 curl -s -X POST localhost:8081/admin/fault/reset
+# Toxiproxy 경유(E8 네트워크 장애): 데이터 경로는 18081, 제어 API는 8474
+#   scripts/run-experiment.sh ... --env EXTERNAL_BASE_URL=http://toxiproxy:18081
+curl -s localhost:8474/proxies   # toxic 추가/삭제는 8474
 ```
 
 ## 주의
