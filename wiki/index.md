@@ -11,16 +11,17 @@ tags: [index]
 > 워크플로우 규칙: [../CLAUDE.md](../CLAUDE.md) · 사용법: [howto/wiki-workflow.md](howto/wiki-workflow.md)
 
 ## 현재 상태
-- **단계**: 2주차 진행 중 — E2 완료. 2인 협업 시작([D-005](decisions/D-005-two-person-track-split.md)): A(kimdoogi)=런타임·자원, B(popogustn)=도메인·장애
-- **다음 작업**: A → E3(CPU bound) → E5(pinning) · B → 쿠폰 도메인 구현
+- **단계**: 2주차 진행 중 — E2·E3 완료. 2인 협업 시작([D-005](decisions/D-005-two-person-track-split.md)): A(kimdoogi)=런타임·자원, B(popogustn)=도메인·장애
+- **다음 작업**: A → E5(pinning) · B → 쿠폰 도메인 구현
 - **진행 중 journal**: 없음
 - **열린 문제(open)**: 없음
-- **다음 번호**: A(홀수) → P-001 · D-007 · B(짝수) → P-002 · D-006
+- **다음 번호**: A(홀수) → P-003 · D-007 · B(짝수) → P-002 · D-006
 
 ## 마스터 문서
 - [PLAN.md](../PLAN.md) — 실험 E1~E13, 뼈대 구조, 로컬↔클라우드 매핑, 로드맵
 
 ## Journal (작업 기록, 최신순)
+- [2026-08-24 E3 — CPU bound 플랫폼 vs 버츄얼](journal/2026-08-24-E3-cpu-bound.md) — done
 - [2026-08-24 2인 협업 트랙 확정 및 규칙 문서화](journal/2026-08-24-track-split.md) — done
 - [2026-08-20 E2 — I/O bound VT vs 플랫폼](journal/2026-08-20-E2-io-bound.md) — done
 - [2026-08-20 2차 리뷰 결함 15건 수정](journal/2026-08-20-review2-fixes.md) — done
@@ -31,7 +32,7 @@ tags: [index]
 - [2026-08-19 계획 수립 & 위키 체계 구축](journal/2026-08-19-plan-and-wiki-setup.md) — done
 
 ## Problems (문제 → 해결)
-- (아직 없음)
+- [P-001 로컬 JDK 21 소실로 빌드 실패](problems/P-001-jdk21-missing-build-fail.md) — solved (foojay resolver)
 
 ## Decisions (ADR)
 - [D-001 도메인: 선착순 쿠폰 발급 서비스](decisions/D-001-domain-flash-sale-coupon.md) — accepted
@@ -41,6 +42,7 @@ tags: [index]
 - [D-005 2인 협업 — 실험 트랙 분할 (A=kimdoogi, B=popogustn)](decisions/D-005-two-person-track-split.md) — accepted
 
 ## Experiments (실험)
+- [E3 CPU bound — 플랫폼 vs 버츄얼 + 스레드 수 컨트롤](experiments/E3-cpu-bound-vt-vs-platform.md) — done (가설 기각: 변수는 스레드 수. M 피크 494/761/799)
 - [E2 I/O bound — 플랫폼 vs 버츄얼 (S/M/L)](experiments/E2-io-bound-vt-vs-platform.md) — done (천장 666 실측, VT 2,000rps, S-on 붕괴)
 - [E1 계측 검증 & 베이스라인](experiments/E1-baseline.md) — done (M/VT: ping 피크 6,000rps, CPU 병목)
 - 예정: E2 I/O bound VT on/off → E3 CPU bound → E5 pinning → … (PLAN.md §4.3)
