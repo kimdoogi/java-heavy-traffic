@@ -23,3 +23,4 @@ tags: [log]
 - 2026-08-24 | 2인 협업 트랙 확정 | A(kimdoogi)=런타임·자원(E3·E4·E5·E10~12), B(popogustn)=도메인·장애(구현+E6~E9·E13). 규칙은 CLAUDE.md, 번호 A=홀수/B=짝수 | [D-005](decisions/D-005-two-person-track-split.md)
 - 2026-08-24 | 빌드 환경 복구 | 로컬 JDK 21·k6 소실 → foojay resolver 추가, k6 v2.2.0 재설치 | [P-001](problems/P-001-jdk21-missing-build-fail.md)
 - 2026-08-24 | E3 완료 | 가설 기각 — CPU bound에서도 VT 우위(M 피크 761 vs 494). 컨트롤(플랫폼 스레드2)=799로 원인은 오버서브스크립션 확정. 튜닝된 플랫폼 ≥ VT | [E3](experiments/E3-cpu-bound-vt-vs-platform.md)
+- 2026-08-24 | main 보호 활성 | PR 필수+승인 1명+관리자 포함. 이후 브랜치 a/*·b/* → PR → 상대 승인 → merge | [journal](journal/2026-08-24-pr-branch-protection.md)

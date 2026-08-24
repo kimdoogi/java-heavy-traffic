@@ -21,6 +21,7 @@ tags: [index]
 - [PLAN.md](../PLAN.md) — 실험 E1~E13, 뼈대 구조, 로컬↔클라우드 매핑, 로드맵
 
 ## Journal (작업 기록, 최신순)
+- [2026-08-24 main 보호 — PR + 상대 리뷰 필수화](journal/2026-08-24-pr-branch-protection.md) — done
 - [2026-08-24 E3 — CPU bound 플랫폼 vs 버츄얼](journal/2026-08-24-E3-cpu-bound.md) — done
 - [2026-08-24 2인 협업 트랙 확정 및 규칙 문서화](journal/2026-08-24-track-split.md) — done
 - [2026-08-20 E2 — I/O bound VT vs 플랫폼](journal/2026-08-20-E2-io-bound.md) — done
