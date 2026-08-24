@@ -11,15 +11,17 @@ tags: [index]
 > 워크플로우 규칙: [../CLAUDE.md](../CLAUDE.md) · 사용법: [howto/wiki-workflow.md](howto/wiki-workflow.md)
 
 ## 현재 상태
-- **단계**: 2주차 진행 중 — E2 완료. 다음: E3(CPU bound) → E5(pinning)
+- **단계**: 2주차 진행 중 — E2 완료. 2인 협업 시작([D-005](decisions/D-005-two-person-track-split.md)): A(kimdoogi)=런타임·자원, B(popogustn)=도메인·장애
+- **다음 작업**: A → E3(CPU bound) → E5(pinning) · B → 쿠폰 도메인 구현
 - **진행 중 journal**: 없음
 - **열린 문제(open)**: 없음
-- **다음 번호**: P-001 · D-005
+- **다음 번호**: A(홀수) → P-001 · D-007 · B(짝수) → P-002 · D-006
 
 ## 마스터 문서
 - [PLAN.md](../PLAN.md) — 실험 E1~E13, 뼈대 구조, 로컬↔클라우드 매핑, 로드맵
 
 ## Journal (작업 기록, 최신순)
+- [2026-08-24 2인 협업 트랙 확정 및 규칙 문서화](journal/2026-08-24-track-split.md) — done
 - [2026-08-20 E2 — I/O bound VT vs 플랫폼](journal/2026-08-20-E2-io-bound.md) — done
 - [2026-08-20 2차 리뷰 결함 15건 수정](journal/2026-08-20-review2-fixes.md) — done
 - [2026-08-20 수정 커밋 2차 코드 리뷰](journal/2026-08-20-code-review-round2.md) — done (수정 대기)
@@ -36,6 +38,7 @@ tags: [index]
 - [D-002 Spring MVC + Virtual Thread (WebFlux 대신)](decisions/D-002-spring-mvc-virtual-threads-over-webflux.md) — accepted
 - [D-003 LLM-wiki 방식의 작업·기록 루프](decisions/D-003-llm-wiki-workflow.md) — accepted
 - [D-004 Spring Boot 4.0.x 채택](decisions/D-004-spring-boot-4.md) — accepted
+- [D-005 2인 협업 — 실험 트랙 분할 (A=kimdoogi, B=popogustn)](decisions/D-005-two-person-track-split.md) — accepted
 
 ## Experiments (실험)
 - [E2 I/O bound — 플랫폼 vs 버츄얼 (S/M/L)](experiments/E2-io-bound-vt-vs-platform.md) — done (천장 666 실측, VT 2,000rps, S-on 붕괴)

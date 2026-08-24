@@ -20,3 +20,4 @@ tags: [log]
 - 2026-08-20 | 수정 커밋 2차 리뷰 | 신규 결함 15건 확정(breakpoint VU 폭탄·delayAbortEval 전역 기준·status 검증 누락 등). k6 inspect가 OS env를 무시함을 발견(지난 검증 1건 무효) | [journal](journal/2026-08-20-code-review-round2.md)
 - 2026-08-20 | 2차 리뷰 15건 수정 | E9 재설계(VU 예산·스텝 유예·dropped 가드·exit 매핑), 실효 검증 전수화(verify-effective.py), status/delay 상한, hang cap 문서화. 전부 실측 | [journal](journal/2026-08-20-review2-fixes.md)
 - 2026-08-20 | E2 완료 | 플랫폼 천장 666rps 실측(S/M/L 동일, 이론 일치), VT는 1cpu에서 2,000rps p99 316ms. S(0.5cpu)에선 VT가 백프레셔 부재로 먼저 붕괴(3,000건 60s 타임아웃) | [E2](experiments/E2-io-bound-vt-vs-platform.md)
+- 2026-08-24 | 2인 협업 트랙 확정 | A(kimdoogi)=런타임·자원(E3·E4·E5·E10~12), B(popogustn)=도메인·장애(구현+E6~E9·E13). 규칙은 CLAUDE.md, 번호 A=홀수/B=짝수 | [D-005](decisions/D-005-two-person-track-split.md)

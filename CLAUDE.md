@@ -5,6 +5,34 @@ Java 21 Virtual Thread 기반 선착순 쿠폰 서비스를 리소스 제한(CPU
 - 마스터 플랜: `PLAN.md` (실험 E1~E13, 뼈대, 로컬↔클라우드 매핑, 로드맵)
 - 지식·기록 위키: `wiki/` (아래 워크플로우의 중심)
 
+## 2인 협업 규칙 (D-005, 2026-08-24)
+
+### 담당 트랙
+| 트랙 | 담당 | 범위 |
+|---|---|---|
+| **A 런타임·자원** | **kimdoogi** | E3·E4·E5·E10·E11·E12 — VT 내부, 커넥션 풀, GC, soak, 스케일아웃 |
+| **B 도메인·장애** | **popogustn** | 쿠폰 도메인 구현 + E6·E7·E8·E9·E13 — 동시성 제어, 멱등성, Resilience, 백프레셔 |
+
+### 경로 소유권 (상대 소유 경로는 합의 없이 수정 금지)
+- **A**: `monitoring/`, `scripts/`, `load/` 기존 시나리오(00~30·60), `coupon-api/…/experiment/`
+- **B**: `coupon-api/…/coupon` 도메인 신규 패키지, `mock-external/`, `load/` 쿠폰·장애 신규 시나리오
+- **공유(수정 전 상대 합의)**: `docker-compose.yml`, `build.gradle`, `settings.gradle`, `PLAN.md`, `CLAUDE.md`, `coupon-api/…/common/`·`config/`
+- wiki: 각자 자기 트랙의 journal/experiment/problem/decision만 생성.
+
+### 위키 번호 (P-/D- 공통)
+- **A=홀수, B=짝수**. 재사용 금지. 다음 번호는 `wiki/index.md`의 트랙별 항목을 쓴다.
+
+### index.md / log.md 충돌
+- `log.md`: append-only. 머지 충돌 시 양쪽 줄 다 살리고 날짜순 정렬.
+- `index.md`: 자기 항목 추가만. "다음 번호"는 자기 트랙 것만 갱신.
+
+### API 계약
+- 쿠폰 API 스펙(경로·요청·응답·에러)은 `PLAN.md`가 기준. B가 바꾸면 PLAN.md 먼저 수정하고 커밋 제목에 `contract:` 접두 → A는 k6 시나리오를 그에 맞춘다.
+
+### 싱크
+- 작업 시작 전 `git pull --rebase`, journal 단위 커밋 즉시 push. main 직접 push 유지.
+- 트랙 간 의존: E4(A)는 B의 쿠폰 도메인(`/coupons/{id}`) 완성 후 실행 가능.
+
 ## 위키 우선 워크플로우 (모든 세션 필수)
 "작업 → 기록 → 반복". 코드가 진행돼도 기록이 끊기면 안 된다. 나중에 "어떤 문제가 있었고 어떻게 해결했는지"를 위키만 보고 재구성할 수 있어야 한다.
 
