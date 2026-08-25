@@ -30,9 +30,9 @@ Java 21 Virtual Thread 기반 선착순 쿠폰 서비스를 리소스 제한(CPU
 - 쿠폰 API 스펙(경로·요청·응답·에러)은 `PLAN.md`가 기준. B가 바꾸면 PLAN.md 먼저 수정하고 커밋 제목에 `contract:` 접두 → A는 k6 시나리오를 그에 맞춘다.
 
 ### 브랜치 / PR (2026-08-24부터)
-- **main 직접 push 금지** (branch protection: PR 필수 + 승인 1명, 관리자 포함). 본인 PR은 본인이 승인 불가 → 상대 리뷰 필수.
+- **main 직접 push 금지** (branch protection: PR 필수, 관리자 포함). 승인 요구는 2026-08-25 해제 — 승인 없이 merge 가능하나 상대 리뷰는 권장.
 - 브랜치: `a/<슬러그>`(kimdoogi) · `b/<슬러그>`(popogustn). 작업 단위(journal)당 브랜치 1개.
-- 흐름: 브랜치 커밋 → push → `gh pr create` → 상대 승인 → merge(squash 아님, merge commit) → 브랜치 삭제.
+- 흐름: 브랜치 커밋 → push → `gh pr create` → (리뷰는 선택) → merge(squash 아님, merge commit) → 브랜치 삭제.
 - 트랙 간 의존: E4(A)는 B의 쿠폰 도메인(`/coupons/{id}`) 완성 후 실행 가능.
 
 ## 위키 우선 워크플로우 (모든 세션 필수)
