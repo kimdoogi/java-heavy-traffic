@@ -15,7 +15,7 @@ tags: [index]
 - **다음 작업**: A → P-003 탐색 또는 E10(GC) · B → 쿠폰 도메인 구현 (E4는 B 완성 후)
 - **진행 중 journal**: 없음
 - **열린 문제(open)**: [P-003](problems/P-003-pinned-ceiling-not-scaling.md)
-- **다음 번호**: A(홀수) → P-005 · D-007 · B(짝수) → P-002 · D-006
+- **다음 번호**: A(홀수) → P-007 · D-007 · B(짝수) → P-002 · D-006
 
 ## 마스터 문서
 - [PLAN.md](../PLAN.md) — 실험 E1~E13, 뼈대 구조, 로컬↔클라우드 매핑, 로드맵
@@ -36,6 +36,7 @@ tags: [index]
 ## Problems (문제 → 해결)
 - [P-001 로컬 JDK 21 소실로 빌드 실패](problems/P-001-jdk21-missing-build-fail.md) — solved (foojay resolver)
 - [P-003 pinned 천장이 CPU 수와 무관하게 ~37.5rps](problems/P-003-pinned-ceiling-not-scaling.md) — **open**
+- [P-005 lock 런 pinned-count가 sync 런 잔재로 오염](problems/P-005-pinned-count-carryover.md) — solved (0건 정정, 컨테이너 로그 timestamp 검증)
 
 ## Decisions (ADR)
 - [D-001 도메인: 선착순 쿠폰 발급 서비스](decisions/D-001-domain-flash-sale-coupon.md) — accepted
