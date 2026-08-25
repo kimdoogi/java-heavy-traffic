@@ -56,5 +56,5 @@ related: [../problems/P-003-pinned-ceiling-not-scaling.md, ../experiments/E5-pin
 ## 남은 일 / 다음 단계
 - [x] /api/env 추가 + 빌드
 - [x] R1~R4 + P-003 갱신(solved) + concept 페이지
-- [ ] 커밋 + push (PR은 PR #1 merge 후 생성 — 브랜치가 a/e5-pinning 위에 쌓임)
+- [x] 커밋 + push + PR #2 생성 (PR #1 merge 후)
 - [ ] 다음: E10(GC) 또는 B의 도메인 완성 대기 후 E4
