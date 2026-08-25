@@ -18,9 +18,9 @@ related: [../../CLAUDE.md]
 - 세션 종료 시 `git push`. 커밋 없이 세션을 끝내지 않는다 (위키 갱신도 커밋 대상).
 
 ## PR 정책 (2026-08-24부터, 2인 협업)
-- main은 branch protection: **PR 필수 + 승인 1명 + 관리자 포함 강제**. 직접 push는 거부된다.
+- main은 branch protection: **PR 필수 + 관리자 포함 강제**. 직접 push는 거부된다.
+- (2026-08-25 변경) 승인 요구(1명) 해제 — required_approving_review_count=0. 승인 없이 merge 가능, 상대 리뷰는 권장 사항.
 - 브랜치 이름: `a/<슬러그>`(kimdoogi) · `b/<슬러그>`(popogustn). journal 1건 = 브랜치 1개 = PR 1개.
-- 본인 PR 본인 승인 불가(GitHub 기본) → 항상 상대가 리뷰. 리뷰 요청은 PR 생성 시 자동/수동 지정.
 - 머지 후 브랜치 삭제. 로컬은 `git switch main && git pull --rebase`.
 
 ## 자주 쓰는 명령
@@ -29,6 +29,6 @@ git switch -c a/<슬러그>                       # 작업 시작 (A 기준)
 git add -A && git commit -m "docs: ..." && git push -u origin HEAD
 gh pr create --fill --reviewer popogustn      # PR 생성 + 리뷰 요청
 gh pr status                                  # 내 PR / 리뷰 대기 확인
-gh pr merge --merge --delete-branch           # 승인 후 머지
+gh pr merge --merge --delete-branch           # 머지 (승인 불필요, 2026-08-25부터)
 git log --oneline --graph -20
 ```
