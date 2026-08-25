@@ -46,5 +46,5 @@ related: [../journal/2026-08-24-E5-pinning.md, E2-io-bound-vt-vs-platform.md, ..
 - docker stats CPU%가 제한(100%/200%)을 초과 표기(142.8%, 278.9%) — 샘플링 구간 버스트로 보임. 절대값보단 추세 지표로 쓸 것.
 
 ## 다음 액션
-- P-003 원인 탐색(스케줄러 parallelism 명시 설정, jcmd Thread.dump로 캐리어 관찰)
+- ~~P-003 원인 탐색~~ → 완료(2026-08-25): 실효 캐리어 수≠CPU 수가 원인. [P-003](../problems/P-003-pinned-ceiling-not-scaling.md) solved
 - 2주차 A 트랙 목표(E2·E3·E5) 완료 → 다음: E10(GC) 또는 B의 도메인 대기 후 E4

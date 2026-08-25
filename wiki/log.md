@@ -26,3 +26,4 @@ tags: [log]
 - 2026-08-24 | main 보호 활성 | PR 필수+승인 1명+관리자 포함. 이후 브랜치 a/*·b/* → PR → 상대 승인 → merge | [journal](journal/2026-08-24-pr-branch-protection.md)
 - 2026-08-24 | E5 완료 | pinning 재현: sync 37.5rps·p50 26s vs lock 1,541~1,994rps·p50 52ms (41~53배). pinned 스택 확보. 천장이 CPU 수 무관 → P-003 open | [E5](experiments/E5-pinning.md)
 - 2026-08-25 | E5 리뷰 반영 | PR #1 셀프 리뷰 11건 수정. lock 런 pinned-count는 sync 잔재 → 0건 정정(P-005 solved), 위키 수치·표 정정, run-experiment.sh --dirty·PIN_* 캡처 보강 | [P-005](problems/P-005-pinned-count-carryover.md)
+- 2026-08-25 | P-003 규명 | pinned 천장=실효 캐리어 수×1/53ms. M=1+보상1, L=2+0 — 동일 37.5는 우연. parallelism=4→67rps·maxPoolSize=1→붕괴로 검증. /api/env 신설 | [P-003](problems/P-003-pinned-ceiling-not-scaling.md)

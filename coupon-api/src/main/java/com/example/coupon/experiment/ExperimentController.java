@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
  *  - /api/pin/sync        synchronized 안에서 블로킹 → VT pinning 재현 (E5)
  *  - /api/pin/lock        ReentrantLock 버전 → pinning 없음 (E5 대조군)
  *  - /api/db/ping         SELECT 1 → 커넥션 풀 경로 확인 (E1/E4)
+ *  - /api/env             스케줄러/캐리어 실효값 관찰 (P-003)
  */
 @RestController
 @RequestMapping("/api")
@@ -95,6 +96,23 @@ public class ExperimentController {
             lock.unlock();
         }
         return Map.of("mode", "reentrantLock", "sleptMs", ms, "virtual", Thread.currentThread().isVirtual());
+    }
+
+    @GetMapping("/env")
+    public Map<String, Object> env() {
+        // VT 스케줄러의 캐리어는 "ForkJoinPool-1-worker-N" 플랫폼 스레드 — getAllStackTraces는 플랫폼 스레드만 반환하므로 그대로 셀 수 있다
+        var carriers = Thread.getAllStackTraces().keySet().stream()
+                .map(Thread::getName)
+                .filter(n -> n.startsWith("ForkJoinPool-1-worker-"))
+                .sorted()
+                .toList();
+        return Map.of(
+                "availableProcessors", Runtime.getRuntime().availableProcessors(),
+                "schedulerParallelismProp", String.valueOf(System.getProperty("jdk.virtualThreadScheduler.parallelism")),
+                "schedulerMaxPoolSizeProp", String.valueOf(System.getProperty("jdk.virtualThreadScheduler.maxPoolSize")),
+                "carrierCount", carriers.size(),
+                "carriers", carriers,
+                "virtual", Thread.currentThread().isVirtual());
     }
 
     @GetMapping("/db/ping")

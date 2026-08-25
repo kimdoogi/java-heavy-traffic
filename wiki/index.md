@@ -11,16 +11,17 @@ tags: [index]
 > 워크플로우 규칙: [../CLAUDE.md](../CLAUDE.md) · 사용법: [howto/wiki-workflow.md](howto/wiki-workflow.md)
 
 ## 현재 상태
-- **단계**: 2주차 A 트랙 목표 완료(E2·E3·E5). 2인 협업([D-005](decisions/D-005-two-person-track-split.md)): A(kimdoogi)=런타임·자원, B(popogustn)=도메인·장애
-- **다음 작업**: A → P-003 탐색 또는 E10(GC) · B → 쿠폰 도메인 구현 (E4는 B 완성 후)
+- **단계**: 2주차 A 트랙 목표 완료(E2·E3·E5) + P-003 규명. 2인 협업([D-005](decisions/D-005-two-person-track-split.md)): A(kimdoogi)=런타임·자원, B(popogustn)=도메인·장애
+- **다음 작업**: A → E10(GC), PR #1 merge 후 P-003 브랜치 PR · B → 쿠폰 도메인 구현 (E4는 B 완성 후)
 - **진행 중 journal**: 없음
-- **열린 문제(open)**: [P-003](problems/P-003-pinned-ceiling-not-scaling.md)
+- **열린 문제(open)**: 없음
 - **다음 번호**: A(홀수) → P-007 · D-007 · B(짝수) → P-002 · D-006
 
 ## 마스터 문서
 - [PLAN.md](../PLAN.md) — 실험 E1~E13, 뼈대 구조, 로컬↔클라우드 매핑, 로드맵
 
 ## Journal (작업 기록, 최신순)
+- [2026-08-25 P-003 — pinned 천장 원인 탐색](journal/2026-08-25-p003-pinned-ceiling.md) — done
 - [2026-08-24 E5 — Pinning 재현](journal/2026-08-24-E5-pinning.md) — done
 - [2026-08-24 main 보호 — PR + 상대 리뷰 필수화](journal/2026-08-24-pr-branch-protection.md) — done
 - [2026-08-24 E3 — CPU bound 플랫폼 vs 버츄얼](journal/2026-08-24-E3-cpu-bound.md) — done
@@ -35,7 +36,7 @@ tags: [index]
 
 ## Problems (문제 → 해결)
 - [P-001 로컬 JDK 21 소실로 빌드 실패](problems/P-001-jdk21-missing-build-fail.md) — solved (foojay resolver)
-- [P-003 pinned 천장이 CPU 수와 무관하게 ~37.5rps](problems/P-003-pinned-ceiling-not-scaling.md) — **open**
+- [P-003 pinned 천장이 CPU 수와 무관하게 ~37.5rps](problems/P-003-pinned-ceiling-not-scaling.md) — solved (실효 캐리어 수≠CPU 수: M=1+보상1, L=2+0의 우연. parallelism·maxPoolSize 조작으로 검증)
 - [P-005 lock 런 pinned-count가 sync 런 잔재로 오염](problems/P-005-pinned-count-carryover.md) — solved (0건 정정, 컨테이너 로그 timestamp 검증)
 
 ## Decisions (ADR)
@@ -54,7 +55,8 @@ tags: [index]
 
 ## Concepts (학습 개념)
 - [쓰레드 풀 천장과 백프레셔](concepts/thread-ceiling-and-backpressure.md) — solid (E2 기반, 면접 답변 포함)
-- 예정: virtual-thread-basics, virtual-thread-observability, pinning, hikari-pool-sizing, k6-open-vs-closed-model, coordinated-omission, circuit-breaker-bulkhead, idempotency, redis-atomic-stock
+- [VT 캐리어 풀과 pinning 천장](concepts/vt-carrier-pool-and-pinning.md) — solid (E5·P-003 기반, 면접 답변 포함)
+- 예정: virtual-thread-basics, virtual-thread-observability, hikari-pool-sizing, k6-open-vs-closed-model, coordinated-omission, circuit-breaker-bulkhead, idempotency, redis-atomic-stock
 
 ## Howto (런북)
 - [wiki-workflow.md](howto/wiki-workflow.md) — 위키 사용법
