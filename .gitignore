@@ -15,5 +15,6 @@ results/**/*.raw.json
 results/**/effective-env.json
 # 증거 로그는 전역 *.log 무시에서 제외 (k6.log는 대용량이라 계속 제외)
 !results/**/pinned-traces.log
+!results/**/env-samples.log
 # env
 .env
