@@ -51,11 +51,11 @@ for kv in "${EXTRA_ENV[@]+"${EXTRA_ENV[@]}"}"; do export "$kv"; done
 
 OUT="results/$NAME"; mkdir -p "$OUT"
 {
-  echo "name=$NAME"; echo "date=$(date +%Y-%m-%dT%H:%M:%S%z)"; echo "git=$(git rev-parse --short HEAD 2>/dev/null || echo none)"
+  echo "name=$NAME"; echo "date=$(date +%Y-%m-%dT%H:%M:%S%z)"; echo "git=$(git describe --always --dirty 2>/dev/null || echo none)"
   echo "profile=$PROFILE cpus=$APP_CPUS mem=$APP_MEM xmx=$XMX"; echo "VT=$VT_VAL"; echo "APP_JAVA_OPTS=$APP_JAVA_OPTS"
   echo "POOL_SIZE=${POOL_SIZE:-20(default)}"; echo "ISSUE_STRATEGY=${ISSUE_STRATEGY:-default}"; echo "# ISSUE_STRATEGY는 3주차 전략 구현 전까지 동작에 영향 없음 (property로만 소비)"
   echo "extra_env=${EXTRA_ENV[*]+"${EXTRA_ENV[*]}"}"; echo "scenario=$SCRIPT"; echo "k6_extra=${K6_EXTRA[*]+"${K6_EXTRA[*]}"}"
-  env | grep -E '^(SLEEP_MS|DELAY_MS|MAX_RPS|START_RPS|STEP_DUR|STEP_DUR_S|STEPS|HASH_N|ENDPOINT|P99_MS|ERR_RATE|MAX_VUS|DURATION|BASE_URL|EXTERNAL_[A-Z_]+|FAULT_[A-Z_]+|PG_[A-Z_]+|POOL_CONN_TIMEOUT_MS|TOMCAT_[A-Z_]+)=' || true
+  env | grep -E '^(SLEEP_MS|DELAY_MS|MAX_RPS|START_RPS|STEP_DUR|STEP_DUR_S|STEPS|HASH_N|PIN_MODE|PIN_MS|ENDPOINT|P99_MS|ERR_RATE|MAX_VUS|DURATION|BASE_URL|EXTERNAL_[A-Z_]+|FAULT_[A-Z_]+|PG_[A-Z_]+|POOL_CONN_TIMEOUT_MS|TOMCAT_[A-Z_]+)=' || true
 } > "$OUT/meta.env"
 echo "== experiment $NAME =="; cat "$OUT/meta.env"
 

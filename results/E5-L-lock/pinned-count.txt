@@ -1,0 +1,3 @@
+0
+# 2026-08-25 정정: 최초 기록 2는 직전 L-sync 런 잔재(컨테이너 미재생성, timestamp 필터 없이 카운트).
+# 컨테이너 로그 timestamp 재검증으로 L-lock 런 구간 pinned 0건 확정. wiki/problems/P-005-pinned-count-carryover.md

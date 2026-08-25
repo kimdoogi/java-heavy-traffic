@@ -1,0 +1,3 @@
+0
+# 2026-08-25 정정(추정): 최초 기록 1은 직전 M-sync 런 잔재로 추정 — M-sync trace 수(1)와 일치, L에서 동일 방식 오염 확증.
+# M 컨테이너는 L 프로파일 전환 때 재생성돼 로그 소실, 직접 재검증 불가. wiki/problems/P-005-pinned-count-carryover.md
