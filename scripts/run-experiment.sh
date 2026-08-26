@@ -53,7 +53,7 @@ OUT="results/$NAME"; mkdir -p "$OUT"
 {
   echo "name=$NAME"; echo "date=$(date +%Y-%m-%dT%H:%M:%S%z)"; echo "git=$(git describe --always --dirty 2>/dev/null || echo none)"
   echo "profile=$PROFILE cpus=$APP_CPUS mem=$APP_MEM xmx=$XMX"; echo "VT=$VT_VAL"; echo "APP_JAVA_OPTS=$APP_JAVA_OPTS"
-  echo "POOL_SIZE=${POOL_SIZE:-20(default)}"; echo "ISSUE_STRATEGY=${ISSUE_STRATEGY:-default}"; echo "# ISSUE_STRATEGY는 3주차 전략 구현 전까지 동작에 영향 없음 (property로만 소비)"
+  echo "POOL_SIZE=${POOL_SIZE:-20(default)}"; echo "ISSUE_STRATEGY=${ISSUE_STRATEGY:-redis(default)}"; echo "OPTIMISTIC_MAX_RETRIES=${OPTIMISTIC_MAX_RETRIES:-3(default)}"
   echo "extra_env=${EXTRA_ENV[*]+"${EXTRA_ENV[*]}"}"; echo "scenario=$SCRIPT"; echo "k6_extra=${K6_EXTRA[*]+"${K6_EXTRA[*]}"}"
   env | grep -E '^(SLEEP_MS|DELAY_MS|MAX_RPS|START_RPS|STEP_DUR|STEP_DUR_S|STEPS|HASH_N|PIN_MODE|PIN_MS|ENDPOINT|P99_MS|ERR_RATE|MAX_VUS|DURATION|BASE_URL|EXTERNAL_[A-Z_]+|FAULT_[A-Z_]+|PG_[A-Z_]+|POOL_CONN_TIMEOUT_MS|TOMCAT_[A-Z_]+)=' || true
 } > "$OUT/meta.env"
@@ -105,9 +105,12 @@ if ! curl -sf http://localhost:8080/actuator/env -o "$OUT/effective-env.json"; t
   rm -f "$OUT/effective-env.json"
   echo "ERROR: /actuator/env 스냅샷 실패" >&2; exit 1
 fi
-CONTAINER_VARS=" VT POOL_SIZE TOMCAT_MAX_THREADS TOMCAT_MAX_CONNECTIONS TOMCAT_ACCEPT_COUNT POOL_CONN_TIMEOUT_MS EXTERNAL_BASE_URL EXTERNAL_CONNECT_TIMEOUT_MS EXTERNAL_READ_TIMEOUT_MS ISSUE_STRATEGY "
+CONTAINER_VARS=" VT POOL_SIZE TOMCAT_MAX_THREADS TOMCAT_MAX_CONNECTIONS TOMCAT_ACCEPT_COUNT POOL_CONN_TIMEOUT_MS EXTERNAL_BASE_URL EXTERNAL_CONNECT_TIMEOUT_MS EXTERNAL_READ_TIMEOUT_MS ISSUE_STRATEGY OPTIMISTIC_MAX_RETRIES "
 CHECKS=("VT=$VT_VAL")
 [[ -n "${POOL_SIZE:-}" ]] && CHECKS+=("POOL_SIZE=$POOL_SIZE")
+# --strategy/--env 어느 경로로 왔든 전략·재시도 knob은 이제 동작 변수이므로 실효 검증에 포함한다
+[[ -n "${ISSUE_STRATEGY:-}" ]] && CHECKS+=("ISSUE_STRATEGY=$ISSUE_STRATEGY")
+[[ -n "${OPTIMISTIC_MAX_RETRIES:-}" ]] && CHECKS+=("OPTIMISTIC_MAX_RETRIES=$OPTIMISTIC_MAX_RETRIES")
 for kv in "${EXTRA_ENV[@]+"${EXTRA_ENV[@]}"}"; do
   k=${kv%%=*}
   [[ "$CONTAINER_VARS" == *" $k "* ]] && CHECKS+=("$kv")
