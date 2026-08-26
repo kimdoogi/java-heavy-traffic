@@ -58,7 +58,8 @@ management:
 
 coupon:
   issue:
-    strategy: ${ISSUE_STRATEGY:redis}   # 3주차 전략 구현이 소비할 property (그 전까지 동작 영향 없음 — PLAN §1.3)
+    strategy: ${ISSUE_STRATEGY:redis}   # none | db-pessimistic | db-optimistic | redis (E6 실험 변수, PLAN §1.3)
+    optimistic-max-retries: ${OPTIMISTIC_MAX_RETRIES:3}   # db-optimistic 전략의 version 충돌 재시도 상한
 
 external:
   base-url: ${EXTERNAL_BASE_URL:http://localhost:8081}
