@@ -31,3 +31,8 @@ plugins {
 
 ## 재발 방지
 - 저장소에 커밋했으므로 popogustn 머신에 JDK 21이 없어도 자동 해결됨. 로컬 JDK 설치 불필요.
+
+## 추가 발생 (2026-08-26) — 같은 "로컬 툴 소실" 패턴
+- 이번엔 `gh` CLI 소실 (`command not found`, `~/.config/gh`도 없음). JDK 21·k6에 이어 세 번째.
+- 조치: `brew install gh` 재설치. gh 인증은 없었지만 https push가 되는 걸로 보아 keychain에 git 자격증명이 살아 있음 → `git credential fill`에서 토큰을 꺼내 `GH_TOKEN`으로 넘겨 `gh pr create` 성공 (토큰 값은 출력하지 않음). 영구 인증이 필요하면 `gh auth login` 직접 실행할 것.
+- 원인은 여전히 가설(brew 정리 추정). 세 번째 발생이므로 다음에 또 사라지면 원인 추적을 우선할 것.

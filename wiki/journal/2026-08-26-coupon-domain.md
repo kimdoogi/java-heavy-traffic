@@ -40,6 +40,7 @@ related: [../../PLAN.md, ../decisions/D-001-domain-flash-sale-coupon.md, ../deci
 - 테스트 — `TestcontainersConfiguration`을 public으로 변경(하위 패키지 테스트에서 @Import 하기 위해).
 - 예상 밖 동작: 계약 테스트의 "알림 실패 504" 케이스가 **201로 성공**. 원인: 호스트에 compose 스택이 떠 있어 mock-external이 localhost:8081을 리슨 중 → 테스트가 진짜 알림을 보내버림. 조치: 테스트 클래스에서 `external.base-url=http://localhost:1` 고정(항상 connection refused). 교훈: 테스트의 localhost 기본값은 떠 있는 compose 스택과 간섭할 수 있다 — DB/Redis는 @ServiceConnection이 격리해 주지만 그 외 의존성은 직접 고정해야 함.
 - `./gradlew :coupon-api:test` — **10 tests, all passed** (Testcontainers postgres+redis).
+- PR 생성 중 `gh` CLI 소실 발견(JDK·k6에 이은 세 번째) → brew 재설치 + keychain git 자격증명으로 인증해 PR #3 생성 → [P-001](../problems/P-001-jdk21-missing-build-fail.md)에 추가 기록.
 
 ## 결과
 - 구현 파일 14개 (coupon-api `coupon/` 패키지) + 테스트 2클래스 10케이스.
