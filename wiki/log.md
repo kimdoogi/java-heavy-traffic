@@ -29,3 +29,4 @@ tags: [log]
 - 2026-08-25 | P-003 규명 | pinned 천장=실효 캐리어 수×1/53ms. M=1+보상1, L=2+0 — 동일 37.5는 우연. parallelism=4→67rps·maxPoolSize=1→붕괴로 검증. /api/env 신설 | [P-003](problems/P-003-pinned-ceiling-not-scaling.md)
 - 2026-08-25 | PR 승인 요구 해제 | main branch protection에서 required_approving_review_count 1→0. PR 필수는 유지, 리뷰는 권장으로 | [git.md](howto/git.md)
 - 2026-08-26 | 쿠폰 도메인 구현 | 선착순 발급 4전략(none/db-pessimistic/db-optimistic/redis) + API + 동시성 테스트 10건 통과. none 초과발급 4배 재현, optimistic 재시도소진 206/300 (원 소유 B — 트랙 조정 공유 필요) | [journal](journal/2026-08-26-coupon-domain.md)
+- 2026-08-26 | PR #3 코드리뷰 + 15/16건 수정 | redis 복구 경로 재설계(마커+DB 백스톱, 보상 Lua 원자화, FK/unique 구분), knob 파이프라인·@Size·에러계약·테스트 하네스 수정, PLAN §1.2.1 계약 확정(contract:). 보류 1건=E8-5 outbox. 13 tests passed | [journal](journal/2026-08-26-coupon-domain.md)

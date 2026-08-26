@@ -36,6 +36,16 @@ public class NoneIssueStrategy implements IssueStrategy {
         if (remaining.isEmpty()) {
             return IssueResult.NOT_FOUND;
         }
+        // 4전략 공통 순서(중복 → 품절): 이 검사가 없으면 완판 후 기발급자 재요청이 already_issued가 아니라
+        // sold_out으로 분류돼 전략 간 E6/E7 지표 비교가 어긋난다. race는 여전히 아래 unique catch가 백업.
+        Long dup = jdbc.sql("SELECT count(*) FROM coupon_issue WHERE coupon_id = :couponId AND user_id = :userId")
+                .param("couponId", couponId)
+                .param("userId", userId)
+                .query(Long.class)
+                .single();
+        if (dup > 0) {
+            return IssueResult.ALREADY_ISSUED;
+        }
         if (remaining.get() <= 0) {
             return IssueResult.SOLD_OUT;
         }

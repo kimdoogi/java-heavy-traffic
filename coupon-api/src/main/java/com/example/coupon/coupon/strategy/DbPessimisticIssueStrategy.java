@@ -34,6 +34,8 @@ public class DbPessimisticIssueStrategy implements IssueStrategy {
         if (coupon == null) {
             return IssueResult.NOT_FOUND;
         }
+        // 중복검사 SELECT는 4전략 공통 순서(중복 → 품절)의 일부. 락 보유 시간에 DB 왕복 1회가 더해지는
+        // 비용이 있으나(처리량 = 1/락 보유 시간) DB 3전략이 균일하게 지불하므로 E6 비교는 공정하다 — 실험 기록에 명시.
         if (issueRepository.existsByCouponIdAndUserId(couponId, userId)) {
             return IssueResult.ALREADY_ISSUED;
         }

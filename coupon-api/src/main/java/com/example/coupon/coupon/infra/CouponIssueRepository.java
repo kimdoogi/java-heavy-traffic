@@ -11,5 +11,8 @@ public interface CouponIssueRepository extends JpaRepository<CouponIssue, Long> 
 
     long countByCouponId(long couponId);
 
+    /** redis 키 유실 복구 시 발급자 set 재구축용 (RedisIssueStrategy) */
+    List<CouponIssue> findByCouponId(long couponId);
+
     List<CouponIssue> findByUserIdOrderByIssuedAtDesc(long userId);
 }

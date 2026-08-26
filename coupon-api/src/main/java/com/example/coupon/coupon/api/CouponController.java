@@ -14,6 +14,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -50,7 +51,7 @@ public class CouponController {
         this.notificationClient = notificationClient;
     }
 
-    record CreateCouponRequest(@NotBlank String name, @Positive int totalQuantity) {
+    record CreateCouponRequest(@NotBlank @Size(max = 100) String name, @Positive int totalQuantity) {
     }
 
     record CouponResponse(long id, String name, int totalQuantity, int remainingQuantity, Instant createdAt) {

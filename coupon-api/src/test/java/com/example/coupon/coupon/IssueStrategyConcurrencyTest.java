@@ -1,11 +1,14 @@
 package com.example.coupon.coupon;
 
+import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -127,35 +130,48 @@ class IssueStrategyConcurrencyTest {
         }
     }
 
-    /** 서로 다른 userId로 동시에 users명 발급 시도. VT executor + latch로 동시 출발시킨다. */
+    /**
+     * 서로 다른 userId로 동시에 users명 발급 시도. VT executor + latch로 동시 출발시킨다.
+     * 워커 예외는 삼키지 않고 Future.get()으로 회수해 원인 그대로 테스트를 실패시킨다
+     * (예외가 죽은 VT 속으로 사라지면 카운트만 조용히 줄어 flaky해진다).
+     * try-with-resources 대신 명시적 awaitTermination을 쓰는 이유: close()는 무한 대기라
+     * 워커가 hang 났을 때 120s 타임아웃이 실효가 없다.
+     */
     private Map<IssueResult, Long> runConcurrent(IssueStrategy strategy, long couponId, int users) {
-        Map<IssueResult, AtomicLong> counts = new ConcurrentHashMap<>();
+        List<Future<IssueResult>> futures = new ArrayList<>(users);
         CountDownLatch start = new CountDownLatch(1);
-        CountDownLatch done = new CountDownLatch(users);
-        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+        ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+        try {
             for (int i = 0; i < users; i++) {
                 long userId = USER_SEQ.incrementAndGet();
-                executor.execute(() -> {
-                    try {
-                        start.await();
-                        IssueResult r = strategy.issue(couponId, userId);
-                        counts.computeIfAbsent(r, k -> new AtomicLong()).incrementAndGet();
-                    } catch (Exception e) {
-                        throw new IllegalStateException(e);
-                    } finally {
-                        done.countDown();
-                    }
-                });
+                futures.add(executor.submit(() -> {
+                    start.await();
+                    return strategy.issue(couponId, userId);
+                }));
             }
             start.countDown();
-            if (!done.await(120, TimeUnit.SECONDS)) {
+            executor.shutdown();
+            if (!executor.awaitTermination(120, TimeUnit.SECONDS)) {
                 throw new IllegalStateException("concurrent issue did not finish in 120s");
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException(e);
+        } finally {
+            executor.shutdownNow();
         }
-        return counts.entrySet().stream()
-                .collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, e -> e.getValue().get()));
+
+        Map<IssueResult, Long> counts = new EnumMap<>(IssueResult.class);
+        for (Future<IssueResult> future : futures) {
+            try {
+                counts.merge(future.get(), 1L, Long::sum);
+            } catch (ExecutionException e) {
+                throw new AssertionError("worker failed: " + e.getCause(), e.getCause());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(e);
+            }
+        }
+        return counts;
     }
 }

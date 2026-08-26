@@ -20,9 +20,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 기본 전략(redis) 경로로 상태코드·본문 형태를 고정한다 — k6 시나리오(50-flash-sale.js)가 이 계약을 소비한다.
  */
 @Import(TestcontainersConfiguration.class)
-// external.base-url: 호스트에 mock-external이 떠 있으면 알림이 진짜 성공해버리므로, 항상 connection refused가 나는 포트로 고정
+// external.base-url: 호스트에 mock-external이 떠 있으면 알림이 진짜 성공해버리므로 항상 connection refused가 나는 포트로 고정.
+// coupon.issue.strategy: 셸에 export된 ISSUE_STRATEGY가 ${ISSUE_STRATEGY:redis}로 흘러들면 다른 전략으로 돌므로 명시 고정.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = "external.base-url=http://localhost:1")
+        properties = {"external.base-url=http://localhost:1", "coupon.issue.strategy=redis"})
 class CouponApiContractTest {
 
     @Value("${local.server.port}")
@@ -91,6 +92,9 @@ class CouponApiContractTest {
     @Test
     void 검증_실패는_400() {
         assertThat(post("/api/coupons", Map.of("name", "", "totalQuantity", 0)).getStatusCode().value())
+                .isEqualTo(400);
+        // VARCHAR(100) 초과 — @Size가 없으면 INSERT에서 터져 500이 된다
+        assertThat(post("/api/coupons", Map.of("name", "n".repeat(101), "totalQuantity", 1)).getStatusCode().value())
                 .isEqualTo(400);
         // userId 누락
         ResponseEntity<Map> created = post("/api/coupons", Map.of("name", "v", "totalQuantity", 1));

@@ -68,6 +68,8 @@ public class DbOptimisticIssueStrategy implements IssueStrategy {
         if (coupon == null) {
             return IssueResult.NOT_FOUND;
         }
+        // 중복검사는 재시도마다 반복되지만(시도당 SELECT 1회) 유지한다: 중복 요청이 version 충돌과 섞였을 때
+        // 재시도 낭비 없이 already_issued로 조기 반환하기 위함이고, 4전략 공통 순서(중복 → 품절)를 지킨다.
         if (issueRepository.existsByCouponIdAndUserId(couponId, userId)) {
             return IssueResult.ALREADY_ISSUED;
         }
