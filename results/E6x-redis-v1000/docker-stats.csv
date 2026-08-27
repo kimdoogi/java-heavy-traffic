@@ -1,0 +1,7 @@
+1787818839,heavy-coupon-api-1,102.28%,785.8MiB / 1GiB
+1787818839,heavy-grafana-1,0.14%,99.23MiB / 7.748GiB
+1787818839,heavy-prometheus-1,0.00%,72.02MiB / 7.748GiB
+1787818839,heavy-toxiproxy-1,0.00%,5.07MiB / 7.748GiB
+1787818839,heavy-postgres-1,2.70%,197.2MiB / 1GiB
+1787818839,heavy-redis-1,5.43%,10.78MiB / 256MiB
+1787818839,heavy-mock-external-1,0.07%,210.3MiB / 1GiB

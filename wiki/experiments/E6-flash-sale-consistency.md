@@ -54,5 +54,5 @@ related: [../journal/2026-08-27-e6-flash-sale.md, ../concepts/redis-atomic-stock
 - **실험 설계**: 병목 변수(풀)를 상수로 격리하지 않으면 전략이 아니라 풀을 측정하게 된다. `unexpected(500)=0`이 "풀이 비병목"임을 보증하는 증거였다.
 
 ## 다음
-- 더 높은 경합·재고에서 redis vs pessimistic 격차 확대 확인(E9 한계점과 연계).
+- ✅ 크로스오버 + 수직 L 측정 → [E6 크로스오버](E6-crossover-concurrency.md): 1cpu선 pessimistic≈redis 동률(CPU-bound), **2cpu(L)선 redis 스케일(VUS2000 3,007rps) vs pessimistic 정체·500 발생 = 2.3배**. **결론 = 스케일 의존**: 단일 소형노드→pessimistic, 스케일(2cpu+/여러대)→redis.
 - E7 멱등성(중복 userId·Idempotency-Key), E8 `issue-and-notify` 장애 전파.

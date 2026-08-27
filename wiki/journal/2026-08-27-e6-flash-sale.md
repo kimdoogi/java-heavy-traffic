@@ -32,6 +32,7 @@ related: [../../PLAN.md, ../experiments/E6-flash-sale-consistency.md, ./2026-08-
 - 스테일 컨테이너 발견: 실행 중 이미지가 08-24 빌드(쿠폰 도메인 머지 08-27 이전) → `POST /api/coupons` 404. `run-experiment.sh`가 현재 main 코드로 재빌드해 해결.
 - Step 2~3: 4전략 실행. **초기 pool=20/VUS=1,000은 HikariCP 커넥션 타임아웃 1,126건**(풀 병목=E4 성격)으로 비교 오염 → advisor 조언대로 **`POOL_SIZE=50=VUS` 고정**(풀 비병목, 전 전략 `unexpected(500)=0`)으로 4전략 재실행.
 - Step 4: 실험 리포트 [E6](../experiments/E6-flash-sale-consistency.md) + concept [redis-atomic-stock](../concepts/redis-atomic-stock.md) 작성.
+- 크로스오버 + 수직 L(추가): 1cpu선 pessimistic≈redis 동률(CPU-bound). **2cpu(L)선 갈라짐 — redis 스케일(VUS2000 3,007rps) vs pessimistic 정체(~1,300)+커넥션타임아웃 614건**(DB hot-row 락+풀 천장). **결론 = 스케일 의존**(단일 소형→pessimistic / 2cpu+·scale-out→redis). → [E6 크로스오버](../experiments/E6-crossover-concurrency.md).
 
 ## 결과 요약 (pool=50/VUS=50/M, 5,000 발급 / 재고 1,000)
 | 전략 | 초과발급 | RPS | p99 | 특이 |

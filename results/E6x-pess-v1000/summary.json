@@ -1,0 +1,157 @@
+{
+    "metrics": {
+        "http_reqs": {
+            "count": 5001,
+            "rate": 1423.8902069893904
+        },
+        "http_req_receiving": {
+            "p(99)": 0.111,
+            "avg": 0.026640671865627356,
+            "min": 0.005,
+            "med": 0.022,
+            "max": 2.598,
+            "p(90)": 0.04,
+            "p(95)": 0.058
+        },
+        "data_sent": {
+            "count": 784069,
+            "rate": 223240.98594360417
+        },
+        "coupon_unexpected": {
+            "count": 0,
+            "rate": 0,
+            "thresholds": {
+                "count<1": false
+            }
+        },
+        "coupon_issued": {
+            "count": 1000,
+            "rate": 284.7210971784424
+        },
+        "checks": {
+            "passes": 5000,
+            "fails": 0,
+            "value": 1
+        },
+        "http_req_blocked": {
+            "med": 0.001,
+            "max": 68.249,
+            "p(90)": 16.035,
+            "p(95)": 26.189,
+            "p(99)": 34.757,
+            "avg": 3.581495100979959,
+            "min": 0
+        },
+        "http_req_failed": {
+            "passes": 0,
+            "fails": 5001,
+            "value": 0
+        },
+        "vus": {
+            "value": 1000,
+            "min": 1000,
+            "max": 1000
+        },
+        "vus_max": {
+            "value": 1000,
+            "min": 1000,
+            "max": 1000
+        },
+        "data_received": {
+            "count": 890197,
+            "rate": 253457.86654495788
+        },
+        "coupon_sold_out": {
+            "count": 4000,
+            "rate": 1138.8843887137696
+        },
+        "http_req_connecting": {
+            "avg": 3.547562887422513,
+            "min": 0,
+            "med": 0,
+            "max": 68.237,
+            "p(90)": 15.865,
+            "p(95)": 26.07,
+            "p(99)": 34.724
+        },
+        "http_req_duration{expected_response:true}": {
+            "min": 4.825,
+            "med": 436.11,
+            "max": 1994.554,
+            "p(90)": 1510.553,
+            "p(95)": 1680.119,
+            "p(99)": 1850.01,
+            "avg": 665.6035308938225
+        },
+        "http_req_duration": {
+            "p(90)": 1510.553,
+            "p(95)": 1680.119,
+            "p(99)": 1850.01,
+            "avg": 665.6035308938225,
+            "min": 4.825,
+            "med": 436.11,
+            "max": 1994.554
+        },
+        "iteration_duration": {
+            "p(99)": 1863.01083199,
+            "avg": 669.383838436801,
+            "min": 28.690542,
+            "med": 436.308,
+            "max": 2018.101417,
+            "p(90)": 1515.0573798000003,
+            "p(95)": 1688.3225277
+        },
+        "http_req_tls_handshaking": {
+            "p(99)": 0,
+            "avg": 0,
+            "min": 0,
+            "med": 0,
+            "max": 0,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "http_req_sending": {
+            "max": 7.282,
+            "p(90)": 0.648,
+            "p(95)": 1.172,
+            "p(99)": 2.248,
+            "avg": 0.16107478504300007,
+            "min": 0.001,
+            "med": 0.005
+        },
+        "http_req_waiting": {
+            "avg": 665.4158154369127,
+            "min": 4.74,
+            "med": 436.052,
+            "max": 1993.87,
+            "p(90)": 1510.514,
+            "p(95)": 1680.1,
+            "p(99)": 1849.974
+        },
+        "iterations": {
+            "count": 5000,
+            "rate": 1423.605485892212,
+            "thresholds": {
+                "count>=5000": false
+            }
+        }
+    },
+    "setup_data": {
+        "couponId": 1
+    },
+    "root_group": {
+        "checks": {
+            "status is 201|409|503": {
+                "name": "status is 201|409|503",
+                "path": "::status is 201|409|503",
+                "id": "e593b7ebd4849977a5b96da8e1869734",
+                "passes": 5000,
+                "fails": 0
+            }
+        },
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {}
+    }
+}

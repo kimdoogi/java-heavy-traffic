@@ -50,6 +50,7 @@ tags: [index]
 
 ## Experiments (실험)
 - [E6 선착순 정합성 — 4전략 부하 비교](experiments/E6-flash-sale-consistency.md) — done (pool=50 격리: none 초과 +4,000 붕괴 / pessimistic·redis 정합성0, 520·549rps / optimistic 재시도폭증 503 72%)
+- [E6 크로스오버 — 동시성·수직 pessimistic vs redis](experiments/E6-crossover-concurrency.md) — done (1cpu 동률=CPU-bound / 2cpu선 redis 2.3배·pessimistic 500. 결론=스케일 의존: 소형→pessimistic, 스케일→redis)
 - [E5 Pinning 재현 — synchronized vs ReentrantLock](experiments/E5-pinning.md) — done (37.5 vs 1,541~1,994rps, 41~53배. P-003 파생)
 - [E3 CPU bound — 플랫폼 vs 버츄얼 + 스레드 수 컨트롤](experiments/E3-cpu-bound-vt-vs-platform.md) — done (가설 기각: 변수는 스레드 수. M 피크 494/761/799)
 - [E2 I/O bound — 플랫폼 vs 버츄얼 (S/M/L)](experiments/E2-io-bound-vt-vs-platform.md) — done (천장 666 실측, VT 2,000rps, S-on 붕괴)
