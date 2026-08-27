@@ -1,0 +1,47 @@
+---
+title: "2026-08-27 E6 — 선착순 정합성 실험 (4전략 부하 비교)"
+date: 2026-08-27
+status: in-progress
+tags: [journal, e6, coupon, load-test, k6]
+related: [../../PLAN.md, ../experiments/E6-flash-sale-consistency.md, ./2026-08-26-coupon-domain.md, ../decisions/D-005-two-person-track-split.md]
+---
+
+## 목표
+쿠폰 도메인(A가 PR#3로 구현)의 발급 전략 4종을 실제 부하로 돌려 **선착순 정합성 + 성능을 수치로 비교**(PLAN §4.3 E6).
+- 정합성: none=초과발급 발생 / db-pessimistic·db-optimistic·redis = `count(coupon_issue) ≤ total`
+- 성능: RPS·p50/95/99·응답분포(issued/sold_out/retry_exhausted)·재시도(`coupon_issue_retry_total`)·DB/앱 CPU
+
+## 범위
+- **한다**: k6 부하 시나리오(`load/50-flash-sale.js`) · 검증/리셋 스크립트(`scripts/verify-coupon.sh`·`reset-db.sh`) · 전략 4종 실행 · 결과 표·해석.
+- **안 한다**: 전략 코드(이미 A가 구현·테스트 완료) · 멱등성(E7) · 외부장애(E8) · 한계점(E9).
+
+## 협업 메모 (D-005)
+- 쿠폰 도메인은 원래 B(popogustn) 소유였으나 A(kimdoogi)가 PR#3로 구현. E6 실험은 B가 이어받음.
+- `scripts/`는 A 소유 경로 — verify/reset 스크립트 신설은 A journal "남은 일"에 이미 예상된 항목. PR에서 A 리뷰로 합의.
+- D-005 갱신(트랙 재조정: A=도메인·B=실험) 필요 — PR 때 반영.
+
+## 설계 요점
+- **전략 전환 = 앱 재기동**: `run-experiment.sh --strategy <s>`가 `ISSUE_STRATEGY` env 주입 + compose 재적용 + 실효검증.
+- **409 sold_out이 정상**(5,000중 4,000): `http.setResponseCallback(expectedStatuses(201,409,503))`로 내장 실패지표를 정직화하고, 결과별 커스텀 Counter로 분리 집계.
+- **정합성 검증은 count 기준**: redis는 DB `remaining`이 stale → `count(coupon_issue)`가 진실(A journal). 4전략 공통으로 count로 본다.
+- **무효 런 방지**: `iterations count>=ITERS` threshold — maxDuration에 잘려 덜 돌면 실패 처리(특히 db-pessimistic은 전 요청이 행 락에 직렬화).
+- **결정적 id**: `reset-db.sh`가 RESTART IDENTITY → 첫 쿠폰 id=1 → `verify-coupon.sh` 기본 id=1.
+
+## 진행 (시간순)
+- Step 1: `load/50-flash-sale.js`(shared-iterations 버스트) + `scripts/verify-coupon.sh`·`reset-db.sh` 작성. 스모크 통과. (k6 `check`는 `'k6'`에서 import — 초기 `'k6/check'` 오류 수정.)
+- 스테일 컨테이너 발견: 실행 중 이미지가 08-24 빌드(쿠폰 도메인 머지 08-27 이전) → `POST /api/coupons` 404. `run-experiment.sh`가 현재 main 코드로 재빌드해 해결.
+- Step 2~3: 4전략 실행. **초기 pool=20/VUS=1,000은 HikariCP 커넥션 타임아웃 1,126건**(풀 병목=E4 성격)으로 비교 오염 → advisor 조언대로 **`POOL_SIZE=50=VUS` 고정**(풀 비병목, 전 전략 `unexpected(500)=0`)으로 4전략 재실행.
+- Step 4: 실험 리포트 [E6](../experiments/E6-flash-sale-consistency.md) + concept [redis-atomic-stock](../concepts/redis-atomic-stock.md) 작성.
+
+## 결과 요약 (pool=50/VUS=50/M, 5,000 발급 / 재고 1,000)
+| 전략 | 초과발급 | RPS | p99 | 특이 |
+|---|---|---|---|---|
+| none | **+4,000** | 122 | 2,109ms | 무락 붕괴 — 전원 발급 |
+| db-pessimistic | 0 | 520 | 483ms | 정합성 + 의외로 높은 처리량 |
+| db-optimistic | 0 | 182 | 1,318ms | 503(retry 소진) 3,617 = 72% (재시도 폭증) |
+| redis | 0 | 549 | 488ms | 최고 처리량 |
+
+## 남은 일
+- [ ] Step 5: 커밋·PR (A 리뷰). **머지는 사용자 확인 후** (현재 전부 uncommitted, 리뷰 대기).
+- [ ] D-005 트랙 재조정 최종 확정(A와) — 본 journal에서 갱신 초안, PR에서 확정.
+- [ ] (후속) E7 멱등성 · E8 `issue-and-notify` 장애 전파.

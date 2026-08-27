@@ -13,7 +13,7 @@ tags: [index]
 ## 현재 상태
 - **단계**: 2주차 A 트랙 완료(E2·E3·E5, P-003) + 3주차 쿠폰 도메인 구현 완료(4전략, 동시성 테스트 통과). 2인 협업([D-005](decisions/D-005-two-person-track-split.md)): A(kimdoogi)=런타임·자원, B(popogustn)=도메인·장애 — **쿠폰 도메인은 A가 선구현, popogustn과 조정 공유 필요**
 - **다음 작업**: A → 50-flash-sale.js·verify-coupon.sh 작성 → E6, E4(이제 실행 가능), E10(GC) · B → 트랙 조정 협의 후 E7~E9·E13
-- **진행 중 journal**: 없음
+- **진행 중 journal**: [2026-08-27 E6 실험 (B)](journal/2026-08-27-e6-flash-sale.md) — ⚠️ line 위 "다음 작업"은 A가 E6툴 예정으로 기록, B가 실제 착수함 → 트랙 조정 필요
 - **열린 문제(open)**: 없음
 - **다음 번호**: A(홀수) → P-007 · D-007 · B(짝수) → P-002 · D-006
 
@@ -21,6 +21,7 @@ tags: [index]
 - [PLAN.md](../PLAN.md) — 실험 E1~E13, 뼈대 구조, 로컬↔클라우드 매핑, 로드맵
 
 ## Journal (작업 기록, 최신순)
+- [2026-08-27 E6 — 선착순 정합성 실험 (4전략 부하 비교)](journal/2026-08-27-e6-flash-sale.md) — in-progress
 - [2026-08-26 쿠폰 도메인 — 선착순 발급 4전략 구현](journal/2026-08-26-coupon-domain.md) — done
 - [2026-08-25 P-003 — pinned 천장 원인 탐색](journal/2026-08-25-p003-pinned-ceiling.md) — done
 - [2026-08-24 E5 — Pinning 재현](journal/2026-08-24-E5-pinning.md) — done
@@ -48,6 +49,7 @@ tags: [index]
 - [D-005 2인 협업 — 실험 트랙 분할 (A=kimdoogi, B=popogustn)](decisions/D-005-two-person-track-split.md) — accepted
 
 ## Experiments (실험)
+- [E6 선착순 정합성 — 4전략 부하 비교](experiments/E6-flash-sale-consistency.md) — done (pool=50 격리: none 초과 +4,000 붕괴 / pessimistic·redis 정합성0, 520·549rps / optimistic 재시도폭증 503 72%)
 - [E5 Pinning 재현 — synchronized vs ReentrantLock](experiments/E5-pinning.md) — done (37.5 vs 1,541~1,994rps, 41~53배. P-003 파생)
 - [E3 CPU bound — 플랫폼 vs 버츄얼 + 스레드 수 컨트롤](experiments/E3-cpu-bound-vt-vs-platform.md) — done (가설 기각: 변수는 스레드 수. M 피크 494/761/799)
 - [E2 I/O bound — 플랫폼 vs 버츄얼 (S/M/L)](experiments/E2-io-bound-vt-vs-platform.md) — done (천장 666 실측, VT 2,000rps, S-on 붕괴)
@@ -57,7 +59,8 @@ tags: [index]
 ## Concepts (학습 개념)
 - [쓰레드 풀 천장과 백프레셔](concepts/thread-ceiling-and-backpressure.md) — solid (E2 기반, 면접 답변 포함)
 - [VT 캐리어 풀과 pinning 천장](concepts/vt-carrier-pool-and-pinning.md) — solid (E5·P-003 기반, 면접 답변 포함)
-- 예정: virtual-thread-basics, virtual-thread-observability, hikari-pool-sizing, k6-open-vs-closed-model, coordinated-omission, circuit-breaker-bulkhead, idempotency, redis-atomic-stock
+- [Redis 원자 재고 차감 — hot-row 제거](concepts/redis-atomic-stock.md) — solid (E6 기반, 면접 답변 포함)
+- 예정: virtual-thread-basics, virtual-thread-observability, hikari-pool-sizing, k6-open-vs-closed-model, coordinated-omission, circuit-breaker-bulkhead, idempotency
 
 ## Howto (런북)
 - [wiki-workflow.md](howto/wiki-workflow.md) — 위키 사용법
