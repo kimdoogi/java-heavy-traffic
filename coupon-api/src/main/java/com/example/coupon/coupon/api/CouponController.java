@@ -59,6 +59,12 @@ public class CouponController {
             return new CouponResponse(c.getId(), c.getName(), c.getTotalQuantity(), c.getRemainingQuantity(),
                     c.getCreatedAt());
         }
+
+        /** 조회용: 남은 수량 = 총량 - 발급 수(coupon_issue). redis는 DB remaining이 stale하므로 이 값을 노출한다. */
+        static CouponResponse withIssued(Coupon c, long issued) {
+            int remaining = Math.max(0, c.getTotalQuantity() - (int) issued);
+            return new CouponResponse(c.getId(), c.getName(), c.getTotalQuantity(), remaining, c.getCreatedAt());
+        }
     }
 
     record IssueRequest(@NotNull @Positive Long userId) {
@@ -77,7 +83,7 @@ public class CouponController {
     @GetMapping("/coupons/{id}")
     public ResponseEntity<?> get(@PathVariable long id) {
         return couponService.find(id)
-                .<ResponseEntity<?>>map(c -> ResponseEntity.ok(CouponResponse.from(c)))
+                .<ResponseEntity<?>>map(c -> ResponseEntity.ok(CouponResponse.withIssued(c, couponService.issuedCount(id))))
                 .orElseGet(CouponController::notFoundBody);
     }
 

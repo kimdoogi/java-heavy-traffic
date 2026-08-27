@@ -3,6 +3,7 @@ package com.example.coupon.coupon.infra;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
@@ -117,6 +118,12 @@ public class RedisCouponStockRepository {
     public Long getStock(long couponId) {
         String v = redis.opsForValue().get(stockKey(couponId));
         return v == null ? null : Long.valueOf(v);
+    }
+
+    /** 발급자 set 전체(SMEMBERS) — 조정(reconciliation)이 redis-only 발급을 DB로 복구할 때 쓴다. */
+    public Set<String> issuedMembers(long couponId) {
+        Set<String> members = redis.opsForSet().members(issuedKey(couponId));
+        return members == null ? Set.of() : members;
     }
 
     private String stockKey(long couponId) {

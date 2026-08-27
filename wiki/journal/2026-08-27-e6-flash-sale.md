@@ -42,6 +42,13 @@ related: [../../PLAN.md, ../experiments/E6-flash-sale-consistency.md, ./2026-08-
 | db-optimistic | 0 | 182 | 1,318ms | 503(retry 소진) 3,617 = 72% (재시도 폭증) |
 | redis | 0 | 549 | 488ms | 최고 처리량 |
 
+## redis 제품화 (E6 결론 반영, 별도 작업)
+E6로 "스케일=redis" 확정 → 선택한 redis 경로를 제품 수준으로 완성(전략 코드는 A가 구현한 것 유지, 스위치도 유지 — 데모/비교용).
+- **잔여수량 정확화**: `GET /coupons/{id}` = `total − count(coupon_issue)`. redis는 DB remaining stale이므로 발급 원장 기준(`CouponService.issuedCount` + `CouponController.withIssued`). 4전략 공통 진실.
+- **크래시 갭 조정(reconciliation)**: Lua성공~DB커밋 사이 크래시로 redis-only 발급이 남는 창 → `@Scheduled`(30s) 조정 배치가 redis 발급자 set(`SMEMBERS`)과 DB `coupon_issue`를 대조해 누락분을 DB로 전진 복구(멱등). `CouponReconciliationService` + `CouponSchedulingConfig`. 실검증: 갭 시뮬 → 자동 복구 확인.
+- **README** 데이터 기반 갱신(전략 비교·스케일 결론·제품화). 데모 사이트는 만들었다 제거(불필요).
+- 코드 전부 uncommitted — 사용자 리뷰 후 커밋 예정.
+
 ## 남은 일
 - [ ] Step 5: 커밋·PR (A 리뷰). **머지는 사용자 확인 후** (현재 전부 uncommitted, 리뷰 대기).
 - [ ] D-005 트랙 재조정 최종 확정(A와) — 본 journal에서 갱신 초안, PR에서 확정.

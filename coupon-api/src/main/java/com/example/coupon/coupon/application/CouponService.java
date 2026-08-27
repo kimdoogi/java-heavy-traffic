@@ -58,6 +58,11 @@ public class CouponService {
         return couponRepository.findById(couponId);
     }
 
+    /** 발급 수 = count(coupon_issue). 전략 무관 진실(redis는 DB remaining이 stale). 잔여 = total - 이 값. */
+    public long issuedCount(long couponId) {
+        return issueRepository.countByCouponId(couponId);
+    }
+
     public List<CouponIssue> userIssues(long userId) {
         return issueRepository.findByUserIdOrderByIssuedAtDesc(userId);
     }
