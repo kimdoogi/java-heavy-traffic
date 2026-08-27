@@ -2,6 +2,7 @@ package com.example.coupon.coupon.api;
 
 import java.util.Map;
 
+import com.example.coupon.coupon.application.IdempotencyInProgressException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
@@ -34,5 +35,12 @@ public class CouponApiExceptionHandler {
         log.error("internal error on coupon api", e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "internal_error"));
+    }
+
+    /** 같은 Idempotency-Key로 아직 처리 중인 동시 재시도 (E7, PLAN §1.2.1). strategy 필드 없음 — 전략 계층 도달 전에 끝난다. */
+    @ExceptionHandler(IdempotencyInProgressException.class)
+    public ResponseEntity<Map<String, Object>> onIdempotencyInProgress(IdempotencyInProgressException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("error", "request_in_progress"));
     }
 }

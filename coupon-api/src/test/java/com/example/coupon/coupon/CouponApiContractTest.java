@@ -1,5 +1,6 @@
 package com.example.coupon.coupon;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -117,5 +118,65 @@ class CouponApiContractTest {
         ResponseEntity<Map> retry = post("/api/coupons/" + couponId + "/issue-and-notify", Map.of("userId", 42));
         assertThat(retry.getStatusCode().value()).isEqualTo(409);
         assertThat(retry.getBody()).containsEntry("error", "already_issued");
+    }
+
+    @Test
+    void 같은_Idempotency_Key로_10회_재시도해도_발급은_1건이고_응답은_모두_동일하다() {
+        // E7 (PLAN §1.2.1): per-vu-iterations 10회 재시도 시나리오의 코드 레벨 사전 검증.
+        // 응답을 Map으로 역직렬화해 비교하지 않는다 — Jackson이 작은 정수를 Long/Integer로 왕복시켜
+        // 실제 HTTP 바이트는 같아도 객체 비교가 어긋날 수 있다. 원본 JSON 문자열을 그대로 비교한다.
+        ResponseEntity<Map> created = post("/api/coupons", Map.of("name", "idem", "totalQuantity", 5));
+        long couponId = ((Number) created.getBody().get("id")).longValue();
+        String idempotencyKey = "test-idem-" + System.nanoTime();
+
+        List<ResponseEntity<String>> responses = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            responses.add(client.post().uri("/api/coupons/" + couponId + "/issue")
+                    .header("Idempotency-Key", idempotencyKey)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Map.of("userId", 777))
+                    .retrieve().toEntity(String.class));
+        }
+
+        ResponseEntity<String> first = responses.get(0);
+        assertThat(first.getStatusCode().value()).isEqualTo(201);
+        for (ResponseEntity<String> response : responses) {
+            assertThat(response.getStatusCode()).isEqualTo(first.getStatusCode());
+            assertThat(response.getBody()).isEqualTo(first.getBody());
+        }
+
+        ResponseEntity<List> issues = client.get().uri("/api/users/777/coupon-issues").retrieve().toEntity(List.class);
+        assertThat(issues.getBody()).hasSize(1);
+    }
+
+    @Test
+    void 다른_Idempotency_Key는_각각_독립적으로_처리된다() {
+        ResponseEntity<Map> created = post("/api/coupons", Map.of("name", "idem-distinct", "totalQuantity", 5));
+        long couponId = ((Number) created.getBody().get("id")).longValue();
+
+        ResponseEntity<Map> a = client.post().uri("/api/coupons/" + couponId + "/issue")
+                .header("Idempotency-Key", "key-a-" + System.nanoTime())
+                .contentType(MediaType.APPLICATION_JSON).body(Map.of("userId", 778))
+                .retrieve().toEntity(Map.class);
+        ResponseEntity<Map> b = client.post().uri("/api/coupons/" + couponId + "/issue")
+                .header("Idempotency-Key", "key-b-" + System.nanoTime())
+                .contentType(MediaType.APPLICATION_JSON).body(Map.of("userId", 779))
+                .retrieve().toEntity(Map.class);
+
+        assertThat(a.getStatusCode().value()).isEqualTo(201);
+        assertThat(b.getStatusCode().value()).isEqualTo(201);
+    }
+
+    @Test
+    void Idempotency_Key_없이_보내면_기존_동작과_동일하다() {
+        // 헤더 미전송 회귀 방지 — E6 이전 동작(생성_조회_발급_중복_품절_404_계약)과 동일해야 한다.
+        ResponseEntity<Map> created = post("/api/coupons", Map.of("name", "no-idem", "totalQuantity", 1));
+        long couponId = ((Number) created.getBody().get("id")).longValue();
+
+        assertThat(post("/api/coupons/" + couponId + "/issue", Map.of("userId", 555)).getStatusCode().value())
+                .isEqualTo(201);
+        ResponseEntity<Map> dup = post("/api/coupons/" + couponId + "/issue", Map.of("userId", 555));
+        assertThat(dup.getStatusCode().value()).isEqualTo(409);
+        assertThat(dup.getBody()).containsEntry("error", "already_issued");
     }
 }
