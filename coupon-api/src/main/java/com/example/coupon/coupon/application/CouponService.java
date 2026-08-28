@@ -58,9 +58,17 @@ public class CouponService {
         return couponRepository.findById(couponId);
     }
 
-    /** 발급 수 = count(coupon_issue). 전략 무관 진실(redis는 DB remaining이 stale). 잔여 = total - 이 값. */
-    public long issuedCount(long couponId) {
-        return issueRepository.countByCouponId(couponId);
+    /**
+     * 잔여 수량. redis 재고 키가 잔여 그 자체(O(1) GET)이므로 우선 사용한다 — count(coupon_issue)는 발급이
+     * 쌓일수록 커지고 조회는 발급보다 트래픽이 많아, 발급에서 없앤 DB 비용을 조회로 되돌리는 꼴이기 때문.
+     * redis 키 유실 시에만 발급 원장 count로 폴백한다(그때만 O(N)).
+     */
+    public long remaining(long couponId, int totalQuantity) {
+        Long stock = stockRepository.getStock(couponId);
+        if (stock != null) {
+            return Math.max(0, stock);
+        }
+        return Math.max(0, totalQuantity - issueRepository.countByCouponId(couponId));
     }
 
     public List<CouponIssue> userIssues(long userId) {

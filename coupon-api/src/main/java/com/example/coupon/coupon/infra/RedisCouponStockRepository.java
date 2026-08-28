@@ -2,9 +2,12 @@ package com.example.coupon.coupon.infra;
 
 import java.time.Duration;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Repository;
@@ -22,6 +25,9 @@ public class RedisCouponStockRepository {
      * in-flight 트랜잭션이 정리되기에 충분한 여유로 잡는다.
      */
     private static final Duration RECOVERY_MARKER_TTL = Duration.ofSeconds(180);
+
+    /** SSCAN 배치 크기 — 발급자 set을 조각조각 순회해 대형 set에서도 redis를 블로킹하지 않는다. */
+    private static final int SCAN_BATCH = 500;
 
     // 반환: 1=발급, 2=발급(복구 구간 — DB 백스톱 필요), 0=재고 소진, -1=이미 발급된 사용자, -3=재고 키 미초기화
     private static final DefaultRedisScript<Long> ISSUE_SCRIPT = new DefaultRedisScript<>("""
@@ -120,10 +126,20 @@ public class RedisCouponStockRepository {
         return v == null ? null : Long.valueOf(v);
     }
 
-    /** 발급자 set 전체(SMEMBERS) — 조정(reconciliation)이 redis-only 발급을 DB로 복구할 때 쓴다. */
+    /**
+     * 발급자 set 전체를 반환 — 조정(reconciliation)이 redis-only 발급을 DB로 복구할 때 쓴다.
+     * SMEMBERS(O(N) 단일 명령)는 대형 set에서 redis 싱글 스레드를 통째로 블로킹해 발급 Lua를 지연시키므로,
+     * SSCAN으로 청크 순회한다(배치 사이에 다른 명령이 낀다). 순회 중 추가/삭제분은 fuzzy하나 조정엔 무해.
+     */
     public Set<String> issuedMembers(long couponId) {
-        Set<String> members = redis.opsForSet().members(issuedKey(couponId));
-        return members == null ? Set.of() : members;
+        Set<String> members = new HashSet<>();
+        ScanOptions options = ScanOptions.scanOptions().count(SCAN_BATCH).build();
+        try (Cursor<String> cursor = redis.opsForSet().scan(issuedKey(couponId), options)) {
+            while (cursor.hasNext()) {
+                members.add(cursor.next());
+            }
+        }
+        return members;
     }
 
     private String stockKey(long couponId) {
