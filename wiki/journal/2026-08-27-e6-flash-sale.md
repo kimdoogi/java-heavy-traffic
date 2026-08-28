@@ -45,7 +45,9 @@ related: [../../PLAN.md, ../experiments/E6-flash-sale-consistency.md, ./2026-08-
 ## redis 제품화 (E6 결론 반영, 별도 작업)
 E6로 "스케일=redis" 확정 → 선택한 redis 경로를 제품 수준으로 완성(전략 코드는 A가 구현한 것 유지, 스위치도 유지 — 데모/비교용).
 - **잔여수량 정확화**: `GET /coupons/{id}` = `total − count(coupon_issue)`. redis는 DB remaining stale이므로 발급 원장 기준(`CouponService.issuedCount` + `CouponController.withIssued`). 4전략 공통 진실.
-- **크래시 갭 조정(reconciliation)**: Lua성공~DB커밋 사이 크래시로 redis-only 발급이 남는 창 → `@Scheduled`(30s) 조정 배치가 redis 발급자 set(`SMEMBERS`)과 DB `coupon_issue`를 대조해 누락분을 DB로 전진 복구(멱등). `CouponReconciliationService` + `CouponSchedulingConfig`. 실검증: 갭 시뮬 → 자동 복구 확인.
+- **크래시 갭 조정(reconciliation)**: Lua성공~DB커밋 사이 크래시로 redis-only 발급이 남는 창 → 조정이 redis 발급자 set(`SMEMBERS`)과 DB `coupon_issue`를 대조해 누락분을 DB로 전진 복구(멱등). `CouponReconciliationService`, **기동 시 1회(`ApplicationReadyEvent`)** 실행.
+  - 처음엔 `@Scheduled`(30s)로 짰으나 **리뷰에서 초과발급 버그 지적**: 주기 조정이 **살아있는 in-flight 발급**(redis성공~DB커밋 사이)과 겹치면 그 발급을 orphan으로 오인해 DB에 먼저 INSERT → 원 요청은 unique 위반 → 보상이 재고 INCR → **유령 재고 → 초과 발급**(크래시 무관, 타이밍만 겹치면 발생). 기동 직후엔 in-flight이 없어 경합 원천 차단 → `ApplicationReadyEvent` 1회로 변경, `CouponSchedulingConfig` 제거. 멀티노드는 유예 시간 기반 주기 조정 필요(E12).
+  - 실검증: orphan 주입(redis만 발급) → 앱 재시작 → 기동 조정이 자동 복구(로그 "기동 조정 완료 — 1건 복구"), 13 tests 통과.
 - **README** 데이터 기반 갱신(전략 비교·스케일 결론·제품화). 데모 사이트는 만들었다 제거(불필요).
 - 코드 전부 uncommitted — 사용자 리뷰 후 커밋 예정.
 

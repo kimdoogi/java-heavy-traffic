@@ -11,8 +11,9 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 /**
@@ -77,17 +78,24 @@ public class CouponReconciliationService {
     }
 
     /**
-     * 주기 조정. 데모 규모라 전체 쿠폰 스캔 — 대규모라면 '최근 활성 쿠폰'만 타겟해야 한다.
-     * fixedDelay: 이전 실행이 끝난 뒤부터 간격을 재므로 실행이 겹치지 않는다.
+     * 기동 시 1회 조정. orphan(redis엔 발급, DB엔 없음)은 크래시로만 생기고 크래시는 재시작을 부르므로,
+     * 기동 시 한 번이면 그 크래시의 orphan을 모두 잡는다.
+     *
+     * 주기 실행(@Scheduled)을 쓰지 않는 이유: 살아있는 in-flight 발급(redis 성공 ~ DB INSERT 사이)과
+     * 겹치면, 정리가 그 발급을 orphan으로 오인해 DB에 먼저 INSERT → 원래 요청은 unique 위반 → 보상이
+     * 재고를 INCR → 유령 재고 → 초과 발급. 기동 직후엔 in-flight이 없어 이 경합이 원천적으로 없다.
+     * (멀티 노드는 유예 시간 기반 주기 조정이 필요 — E12에서.)
      */
-    @Scheduled(fixedDelayString = "${coupon.reconcile.interval-ms:30000}")
-    public void reconcileAll() {
+    @EventListener(ApplicationReadyEvent.class)
+    public void reconcileOnStartup() {
+        int repaired = 0;
         for (Coupon coupon : couponRepository.findAll()) {
             try {
-                reconcile(coupon.getId());
+                repaired += reconcile(coupon.getId());
             } catch (RuntimeException e) {
-                log.error("reconcile 실패 couponId={}", coupon.getId(), e);
+                log.error("기동 조정 실패 couponId={}", coupon.getId(), e);
             }
         }
+        log.info("기동 조정 완료 — redis-only 발급 {}건 복구", repaired);
     }
 }

@@ -25,7 +25,7 @@ Java 21 **Virtual Thread** 기반 **선착순 쿠폰 발급** 서비스를 **리
 
 ### Redis 전략의 제품화
 - **잔여 수량** = `total − count(coupon_issue)` — redis는 DB `remaining`을 갱신하지 않아(hot-row 제거) stale하므로 발급 원장으로 계산.
-- **크래시 갭 보정**: Lua 성공(재고 DECR + 발급자 SADD) ~ DB INSERT 커밋 사이 크래시로 "redis엔 발급, DB엔 없음"이 생기면, `@Scheduled` **조정(reconciliation)** 이 redis 발급자 set과 DB `coupon_issue`를 대조해 누락분을 DB로 전진 복구(멱등).
+- **크래시 갭 보정**: Lua 성공(재고 DECR + 발급자 SADD) ~ DB INSERT 커밋 사이 크래시로 "redis엔 발급, DB엔 없음"이 생기면, **기동 시 1회 조정**(reconciliation, `ApplicationReadyEvent`)이 redis 발급자 set과 DB `coupon_issue`를 대조해 누락분을 DB로 전진 복구(멱등). (주기 실행은 살아있는 in-flight 발급과 경합해 초과 발급을 유발 → 기동 직후 in-flight 없는 시점 1회로. 멀티노드는 유예-주기 E12.)
 - 복구 경로·알려진 한계: [redis-atomic-stock](wiki/concepts/redis-atomic-stock.md).
 
 ## 구성
