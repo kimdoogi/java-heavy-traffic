@@ -1,6 +1,7 @@
 package com.example.coupon.coupon.application;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.example.coupon.coupon.domain.Coupon;
 import com.example.coupon.coupon.domain.CouponIssue;
@@ -47,20 +48,24 @@ public class CouponReconciliationService {
 
     /** 한 쿠폰의 redis-only 발급을 DB로 복구. 복구한 건수 반환. */
     public int reconcile(long couponId) {
-        Set<String> members = stockRepository.issuedMembers(couponId);
-        if (members.isEmpty()) {
+        Set<String> redisMembers = stockRepository.issuedMembers(couponId);
+        if (redisMembers.isEmpty()) {
             return 0;
         }
+        // DB 발급자 전체를 한 번에 받아(쿠폰당 1 쿼리) 메모리에서 대조 — 멤버당 exists N방을 없앤다.
+        Set<Long> dbUserIds = issueRepository.findByCouponId(couponId).stream()
+                .map(CouponIssue::getUserId)
+                .collect(Collectors.toSet());
         int repaired = 0;
-        for (String member : members) {
+        for (String member : redisMembers) {
             long userId;
             try {
                 userId = Long.parseLong(member);
             } catch (NumberFormatException e) {
                 continue;   // 예상 밖 멤버는 건너뜀
             }
-            if (issueRepository.existsByCouponIdAndUserId(couponId, userId)) {
-                continue;   // 이미 DB에 있음 (정상 경로가 기록함)
+            if (dbUserIds.contains(userId)) {
+                continue;   // 이미 DB에 있음 (메모리 비교 — DB 재조회 안 함)
             }
             try {
                 // save()는 각각 자기 트랜잭션 — 하나가 unique 위반(라이브 경로가 동시에 넣음)이어도 나머지에 영향 없음
