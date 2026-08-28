@@ -3,6 +3,7 @@ package com.example.coupon.coupon;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.example.coupon.TestcontainersConfiguration;
+import com.example.coupon.coupon.application.CouponReconciliationService;
 import com.example.coupon.coupon.application.CouponService;
 import com.example.coupon.coupon.domain.Coupon;
 import com.example.coupon.coupon.infra.CouponIssueRepository;
@@ -28,6 +29,7 @@ class RedisIssueRecoveryTest {
 
     @Autowired RedisIssueStrategy redisStrategy;
     @Autowired CouponService couponService;
+    @Autowired CouponReconciliationService reconciliationService;
     @Autowired CouponIssueRepository issueRepository;
     @Autowired RedisCouponStockRepository stockRepository;
 
@@ -75,5 +77,38 @@ class RedisIssueRecoveryTest {
 
         // 키가 아예 없는 미존재 쿠폰도 NOT_FOUND (lazy init 경로)
         assertThat(redisStrategy.issue(ghostCouponId, USER_SEQ.incrementAndGet())).isEqualTo(IssueResult.NOT_FOUND);
+    }
+
+    @Test
+    void reconcile가_redis에만_있는_유령_발급을_DB로_복구하고_재실행은_0건이다() {
+        Coupon coupon = couponService.create("reconcile", 5);
+        long couponId = coupon.getId();
+        long ghost = USER_SEQ.incrementAndGet();
+
+        // redis에만 발급(Lua: SADD + DECR) — DB INSERT 전 크래시로 붕 뜬(orphan) 상태를 흉내
+        stockRepository.tryIssue(couponId, ghost);
+        assertThat(issueRepository.existsByCouponIdAndUserId(couponId, ghost)).isFalse();
+
+        // 조정 → redis-only 발급을 DB로 전진 복구
+        assertThat(reconciliationService.reconcile(couponId)).isEqualTo(1);
+        assertThat(issueRepository.existsByCouponIdAndUserId(couponId, ghost)).isTrue();
+
+        // 재실행 → 멱등(복구할 것 없음)
+        assertThat(reconciliationService.reconcile(couponId)).isZero();
+    }
+
+    @Test
+    void 잔여수량은_redis_재고를_반영하고_키_유실시_count로_폴백한다() {
+        Coupon coupon = couponService.create("remaining", 5);
+        long couponId = coupon.getId();
+        redisStrategy.issue(couponId, USER_SEQ.incrementAndGet());
+        redisStrategy.issue(couponId, USER_SEQ.incrementAndGet());
+
+        // getStock 경로: redis 재고 = 3
+        assertThat(couponService.remaining(couponId, 5)).isEqualTo(3);
+
+        // 키 유실 → count 폴백: total 5 - 발급 2 = 3
+        stockRepository.deleteKeys(couponId);
+        assertThat(couponService.remaining(couponId, 5)).isEqualTo(3);
     }
 }

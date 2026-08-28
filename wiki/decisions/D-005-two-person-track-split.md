@@ -28,3 +28,9 @@ related: [../journal/2026-08-24-track-split.md]
 - P-/D- 번호: A=홀수, B=짝수 (다음: A → P-001·D-007, B → P-002·D-006).
 - E4(A)는 B의 쿠폰 도메인(`/coupons/{id}`) 완성 후 실행 가능 — 트랙 간 싱크 포인트.
 - 재검토 조건: 한쪽 트랙이 병목이 되어 진도 격차가 2주 이상 벌어지면 실험 재배분.
+
+## 갱신 (2026-08-27, popogustn) — 트랙 재조정
+- **실제 진행이 계획과 갈라짐**: 쿠폰 도메인 구현(원래 트랙 B)을 A(kimdoogi)가 PR #3로 선구현·머지함. E6 실험은 B가 이어받아 수행 → [E6](../experiments/E6-flash-sale-consistency.md).
+- **현행 조정안**: A = 도메인 구현 + 런타임·자원(E3·E4·E5·E10~E12), B = E6·E7·E8·E9·E13 실험·장애.
+- `scripts/`(A 소유)의 E6 도구 `verify-coupon.sh`·`reset-db.sh`는 B가 작성(A journal "남은 일"에 예상돼 있던 항목) — PR에서 A 확인.
+- ⚠️ 이 갱신은 popogustn 단독 초안 — A와 최종 합의 후 `accepted`로 확정. 경로 소유권/번호 규칙(CLAUDE.md) 동반 갱신 필요.

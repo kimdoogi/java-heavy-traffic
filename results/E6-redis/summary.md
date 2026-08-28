@@ -1,0 +1,23 @@
+# E6-redis
+
+```
+name=E6-redis
+date=2026-08-27T16:00:00+0900
+git=4af7f05-dirty
+profile=M cpus=1 mem=1g xmx=512m
+VT=true
+APP_JAVA_OPTS=-Xmx512m -XX:+UseG1GC
+POOL_SIZE=50
+ISSUE_STRATEGY=redis
+OPTIMISTIC_MAX_RETRIES=3(default)
+extra_env=
+scenario=load/50-flash-sale.js
+k6_extra=
+DURATION=5m
+mock_fault={"mode":"normal","delayMs":300,"jitterMs":0,"failRate":0.0,"status":500,"hangSeconds":300,"flapPeriodSeconds":10}
+effective_virtual=true
+```
+
+| name | profile | VT | pool | scenario | rps | p50 ms | p95 ms | p99 ms | failed | dropped | maxVUs | app cpu peak | app mem |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| E6-redis | M | true | 50 | 50-flash-sale.js | 548.6 | 74.5 | 300.6 | 487.5 | 0% | 0 | 50 | 100.1% | 477MiB / 1GiB |
