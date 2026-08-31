@@ -1,7 +1,7 @@
 ---
 title: "2026-08-27 E6 — 선착순 정합성 실험 (4전략 부하 비교)"
 date: 2026-08-27
-status: in-progress
+status: done
 tags: [journal, e6, coupon, load-test, k6]
 related: [../../PLAN.md, ../experiments/E6-flash-sale-consistency.md, ./2026-08-26-coupon-domain.md, ../decisions/D-005-two-person-track-split.md]
 ---
@@ -52,6 +52,9 @@ E6로 "스케일=redis" 확정 → 선택한 redis 경로를 제품 수준으로
 - 코드 전부 uncommitted — 사용자 리뷰 후 커밋 예정.
 
 ## 남은 일
-- [ ] Step 5: 커밋·PR (A 리뷰). **머지는 사용자 확인 후** (현재 전부 uncommitted, 리뷰 대기).
-- [ ] D-005 트랙 재조정 최종 확정(A와) — 본 journal에서 갱신 초안, PR에서 확정.
-- [ ] (후속) E7 멱등성 · E8 `issue-and-notify` 장애 전파.
+- [x] Step 5: 커밋·PR (A 리뷰) — PR #4 `kimdoogi/e6-firstcome-consistency` 머지 완료(`09c2bf9`).
+- [ ] D-005 트랙 재조정 최종 확정(A와) — 본 journal에서 갱신 초안, PR에서 확정 아직 안 됨.
+- [x] (후속) E7 멱등성 — [2026-08-27 E7 journal](2026-08-27-E7-idempotency.md), D-006.
+- [ ] E8 `issue-and-notify` 장애 전파.
+
+> 2026-08-31 갱신(popogustn, E7 작업 중 main 머지하며 발견): PR 머지·main 반영 확인. 상태 in-progress → done으로 정정(파일 자체는 병합 전 uncommitted 상태로 남아 있었음).

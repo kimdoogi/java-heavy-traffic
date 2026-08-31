@@ -11,8 +11,8 @@ tags: [index]
 > 워크플로우 규칙: [../CLAUDE.md](../CLAUDE.md) · 사용법: [howto/wiki-workflow.md](howto/wiki-workflow.md)
 
 ## 현재 상태
-- **단계**: 2주차 A 트랙 완료(E2·E3·E5, P-003) + 3주차 쿠폰 도메인 구현 완료(4전략, 동시성 테스트 통과) + E6(선착순 정합성, PR #4 `kimdoogi/e6-firstcome-consistency`로 머지) + E7(멱등성) 코드 레벨 구현 완료. 2인 협업([D-005](decisions/D-005-two-person-track-split.md)): A(kimdoogi)=런타임·자원, B(popogustn)=도메인·장애 — **쿠폰 도메인(2026-08-26)에 이어 E6도 A가 실행(PR 브랜치=kimdoogi/*, `load/50-flash-sale.js`는 CLAUDE.md상 B 소유 경로) — D-005 트랙 배정과 실제 실행이 두 번째로 어긋남, popogustn과 조정 필요**
-- **다음 작업**: A → E4(이제 실행 가능), E10(GC) · B → E7 k6 실측(50-flash-sale.js·verify-coupon.sh 이제 존재 — 가능해짐), E8(외부 장애 방어 단계별)·E13(백프레셔), 트랙 조정 재확인
+- **단계**: 2주차 A 트랙 완료(E2·E3·E5, P-003) + 3주차 쿠폰 도메인 구현 완료(4전략, 동시성 테스트 통과) + E6(선착순 정합성) + E7(멱등성) 코드 레벨 구현 완료. 2인 협업([D-005](decisions/D-005-two-person-track-split.md), 2026-08-27 갱신): 쿠폰 도메인은 A(kimdoogi)가 선구현(PR #3), E6은 B(popogustn)가 이어받아 실행(PR #4, `scripts/verify-coupon.sh`·`reset-db.sh`도 B 작성) — **현행 조정안**: A=도메인 구현+런타임·자원(E3·E4·E5·E10~E12), B=E6·E7·E8·E9·E13. D-005 갱신은 popogustn 단독 초안이라 A 최종 합의 필요
+- **다음 작업**: A → E4(이제 실행 가능), E10(GC), D-005 갱신 확인 · B → E7 k6 실측(50-flash-sale.js·verify-coupon.sh 이제 존재 — 가능해짐), E8(외부 장애 방어 단계별)·E13(백프레셔)
 - **진행 중 journal**: 없음
 - **열린 문제(open)**: 없음
 - **다음 번호**: A(홀수) → P-007 · D-007 · B(짝수) → P-004 · D-008
@@ -22,7 +22,7 @@ tags: [index]
 
 ## Journal (작업 기록, 최신순)
 - [2026-08-27 E7 — 멱등성(Idempotency-Key) 구현](journal/2026-08-27-E7-idempotency.md) — done
-- [2026-08-27 E6 — 선착순 정합성 실험 (4전략 부하 비교)](journal/2026-08-27-e6-flash-sale.md) — in-progress (PR #4 머지됨 — 상태 라벨은 A 소유 journal이라 직접 안 고침)
+- [2026-08-27 E6 — 선착순 정합성 실험 (4전략 부하 비교)](journal/2026-08-27-e6-flash-sale.md) — done (PR #4 머지 확인 후 상태 정정, D-005 트랙 재조정 A 확정만 남음)
 - [2026-08-26 쿠폰 도메인 — 선착순 발급 4전략 구현](journal/2026-08-26-coupon-domain.md) — done
 - [2026-08-25 P-003 — pinned 천장 원인 탐색](journal/2026-08-25-p003-pinned-ceiling.md) — done
 - [2026-08-24 E5 — Pinning 재현](journal/2026-08-24-E5-pinning.md) — done

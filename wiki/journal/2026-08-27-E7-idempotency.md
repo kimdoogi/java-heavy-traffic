@@ -42,6 +42,7 @@ related: [../../PLAN.md, ../decisions/D-006-idempotency-redis-claim.md, ../probl
 - Spring Boot 4/Spring 7 + Jackson 2/3 공존 함정 → P-002. A 트랙 코드에도 영향 가능성 있어 공유 필요.
 
 ## 남은 일 / 다음 단계
-- [ ] k6 `load/55-idempotency-retry.js` + `wiki/experiments/E7-idempotency.md` — `verify-coupon.sh`/`50-flash-sale.js`(A) 인프라 이후.
+- [ ] k6 `load/55-idempotency-retry.js` + `wiki/experiments/E7-idempotency.md` — 2026-08-31 origin/main 병합으로 `verify-coupon.sh`·`50-flash-sale.js`·`reset-db.sh`가 이제 존재(E6, B 본인 작업). 더 이상 blocked 아님 — 다음 세션에서 착수 가능.
 - [ ] kimdoogi에게 P-002(Jackson 2/3 공존 함정) 공유.
 - [ ] E8-5(outbox) 구현 시 `issue-and-notify`에도 Idempotency-Key 적용 재검토 (D-006 재검토 조건).
+- [ ] D-005 트랙 재조정 최종 확정(A와) — E6 journal에서도 동일하게 open.
