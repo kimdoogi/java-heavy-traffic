@@ -52,14 +52,19 @@ public class IdempotencyService {
         String redisKey = KEY_PREFIX + idempotencyKey;
         boolean claimed = Boolean.TRUE.equals(redis.opsForValue().setIfAbsent(redisKey, PROCESSING_MARKER, lockTtl));
         if (claimed) {
+            // 액션 실패만 delete 대상 — 액션은 성공했는데 그 결과를 캐시에 쓰는 이 다음 줄이 실패하는 경우까지
+            // 같이 지우면(과거 버그), 이미 커밋된 발급의 클레임을 즉시 날려버려 재시도가 재생 대신
+            // ALREADY_ISSUED를 받는다. 이 경우는 클래스 주석의 "결과 저장 전 크래시"와 같은 부류로 두고
+            // lockTtl 만료에 맡긴다(능동으로 지우지 않음).
+            ResponseEntity<Map<String, Object>> response;
             try {
-                ResponseEntity<Map<String, Object>> response = action.get();
-                redis.opsForValue().set(redisKey, serialize(response), resultTtl);
-                return response;
+                response = action.get();
             } catch (RuntimeException e) {
                 redis.delete(redisKey);
                 throw e;
             }
+            redis.opsForValue().set(redisKey, serialize(response), resultTtl);
+            return response;
         }
 
         String cached = redis.opsForValue().get(redisKey);
