@@ -1,0 +1,157 @@
+{
+    "metrics": {
+        "iterations": {
+            "count": 5000,
+            "rate": 1182.1557840163553,
+            "thresholds": {
+                "count>=5000": false
+            }
+        },
+        "data_sent": {
+            "count": 784069,
+            "rate": 185378.34068358393
+        },
+        "http_req_blocked": {
+            "p(95)": 8.244,
+            "p(99)": 14.328,
+            "avg": 0.7153771245751808,
+            "min": 0,
+            "med": 0.001,
+            "max": 24.293,
+            "p(90)": 0.107
+        },
+        "http_req_waiting": {
+            "min": 4.677,
+            "med": 310.355,
+            "max": 1538.896,
+            "p(90)": 778.758,
+            "p(95)": 854.913,
+            "p(99)": 1089.909,
+            "avg": 408.2584731053804
+        },
+        "coupon_sold_out": {
+            "count": 4000,
+            "rate": 945.7246272130842
+        },
+        "data_received": {
+            "count": 890190,
+            "rate": 210468.65147470386
+        },
+        "http_req_duration{expected_response:true}": {
+            "avg": 408.4798524295134,
+            "min": 4.783,
+            "med": 310.378,
+            "max": 1539.031,
+            "p(90)": 778.788,
+            "p(95)": 855.051,
+            "p(99)": 1089.939
+        },
+        "iteration_duration": {
+            "p(99)": 1091.13375441,
+            "avg": 409.35797407359985,
+            "min": 136.194708,
+            "med": 310.450042,
+            "max": 1539.901416,
+            "p(90)": 778.8725794000001,
+            "p(95)": 861.1221163499999
+        },
+        "coupon_unexpected": {
+            "count": 0,
+            "rate": 0,
+            "thresholds": {
+                "count<1": false
+            }
+        },
+        "http_req_tls_handshaking": {
+            "p(90)": 0,
+            "p(95)": 0,
+            "p(99)": 0,
+            "avg": 0,
+            "min": 0,
+            "med": 0,
+            "max": 0
+        },
+        "vus": {
+            "value": 458,
+            "min": 458,
+            "max": 500
+        },
+        "vus_max": {
+            "min": 500,
+            "max": 500,
+            "value": 500
+        },
+        "http_req_receiving": {
+            "min": 0.005,
+            "med": 0.02,
+            "max": 10.985,
+            "p(90)": 0.042,
+            "p(95)": 0.057,
+            "p(99)": 0.104,
+            "avg": 0.028564887022595926
+        },
+        "http_reqs": {
+            "count": 5001,
+            "rate": 1182.3922151731585
+        },
+        "http_req_duration": {
+            "med": 310.378,
+            "max": 1539.031,
+            "p(90)": 778.788,
+            "p(95)": 855.051,
+            "p(99)": 1089.939,
+            "avg": 408.4798524295134,
+            "min": 4.783
+        },
+        "http_req_connecting": {
+            "min": 0,
+            "med": 0,
+            "max": 18.997,
+            "p(90)": 0.094,
+            "p(95)": 8.187,
+            "p(99)": 13.8,
+            "avg": 0.6980257948410318
+        },
+        "coupon_issued": {
+            "count": 1000,
+            "rate": 236.43115680327105
+        },
+        "http_req_failed": {
+            "passes": 0,
+            "fails": 5001,
+            "value": 0
+        },
+        "checks": {
+            "passes": 5000,
+            "fails": 0,
+            "value": 1
+        },
+        "http_req_sending": {
+            "p(99)": 5.85,
+            "avg": 0.19281443711256754,
+            "min": 0.001,
+            "med": 0.007,
+            "max": 7.324,
+            "p(90)": 0.023,
+            "p(95)": 0.565
+        }
+    },
+    "setup_data": {
+        "couponId": 1
+    },
+    "root_group": {
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {},
+        "checks": {
+                "status is 201|409|503": {
+                    "path": "::status is 201|409|503",
+                    "id": "e593b7ebd4849977a5b96da8e1869734",
+                    "passes": 5000,
+                    "fails": 0,
+                    "name": "status is 201|409|503"
+                }
+            },
+        "name": ""
+    }
+}

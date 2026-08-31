@@ -1,0 +1,153 @@
+{
+    "root_group": {
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {},
+        "checks": {
+                "status is 201|409|503": {
+                    "name": "status is 201|409|503",
+                    "path": "::status is 201|409|503",
+                    "id": "e593b7ebd4849977a5b96da8e1869734",
+                    "passes": 5000,
+                    "fails": 0
+                }
+            }
+    },
+    "metrics": {
+        "http_req_tls_handshaking": {
+            "avg": 0,
+            "min": 0,
+            "med": 0,
+            "max": 0,
+            "p(90)": 0,
+            "p(95)": 0,
+            "p(99)": 0
+        },
+        "checks": {
+            "passes": 5000,
+            "fails": 0,
+            "value": 1
+        },
+        "data_received": {
+            "count": 944676,
+            "rate": 23027.73539004568
+        },
+        "iteration_duration": {
+            "p(90)": 984.1688,
+            "p(95)": 1299.95419615,
+            "p(99)": 2109.4247450899998,
+            "avg": 407.54146311019804,
+            "min": 2.748792,
+            "med": 281.7837915,
+            "max": 5592.954167
+        },
+        "http_req_blocked": {
+            "med": 0.002,
+            "max": 3.912,
+            "p(90)": 0.004,
+            "p(95)": 0.005,
+            "p(99)": 0.537,
+            "avg": 0.011993001399720628,
+            "min": 0
+        },
+        "coupon_issued": {
+            "count": 5000,
+            "rate": 121.88165778555653
+        },
+        "http_reqs": {
+            "count": 5001,
+            "rate": 121.90603411711363
+        },
+        "http_req_duration": {
+            "p(90)": 983.959,
+            "p(95)": 1299.81,
+            "p(99)": 2109.126,
+            "avg": 407.3512401519696,
+            "min": 2.66,
+            "med": 281.655,
+            "max": 5592.614
+        },
+        "coupon_unexpected": {
+            "count": 0,
+            "rate": 0,
+            "thresholds": {
+                "count<1": false
+            }
+        },
+        "http_req_connecting": {
+            "avg": 0.007283343331333731,
+            "min": 0,
+            "med": 0,
+            "max": 0.729,
+            "p(90)": 0,
+            "p(95)": 0,
+            "p(99)": 0.278
+        },
+        "http_req_waiting": {
+            "p(95)": 1299.689,
+            "p(99)": 2108.855,
+            "avg": 407.25900219955975,
+            "min": 2.615,
+            "med": 281.625,
+            "max": 5592.373,
+            "p(90)": 983.897
+        },
+        "vus_max": {
+            "max": 50,
+            "value": 50,
+            "min": 50
+        },
+        "http_req_receiving": {
+            "min": 0.008,
+            "med": 0.055,
+            "max": 56.64,
+            "p(90)": 0.121,
+            "p(95)": 0.148,
+            "p(99)": 0.237,
+            "avg": 0.07811077784443067
+        },
+        "http_req_failed": {
+            "passes": 0,
+            "fails": 5001,
+            "value": 0
+        },
+        "iterations": {
+            "count": 5000,
+            "rate": 121.88165778555653,
+            "thresholds": {
+                "count>=5000": false
+            }
+        },
+        "http_req_sending": {
+            "p(95)": 0.023,
+            "p(99)": 0.037,
+            "avg": 0.014127174565087273,
+            "min": 0.003,
+            "med": 0.012,
+            "max": 0.408,
+            "p(90)": 0.02
+        },
+        "vus": {
+            "value": 26,
+            "min": 26,
+            "max": 50
+        },
+        "http_req_duration{expected_response:true}": {
+            "p(99)": 2109.126,
+            "avg": 407.3512401519696,
+            "min": 2.66,
+            "med": 281.655,
+            "max": 5592.614,
+            "p(90)": 983.959,
+            "p(95)": 1299.81
+        },
+        "data_sent": {
+            "rate": 19112.725907652704,
+            "count": 784069
+        }
+    },
+    "setup_data": {
+        "couponId": 1
+    }
+}
