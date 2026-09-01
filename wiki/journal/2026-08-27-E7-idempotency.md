@@ -46,3 +46,19 @@ related: [../../PLAN.md, ../decisions/D-006-idempotency-redis-claim.md, ../probl
 - [ ] kimdoogi에게 P-002(Jackson 2/3 공존 함정) 공유.
 - [ ] E8-5(outbox) 구현 시 `issue-and-notify`에도 Idempotency-Key 적용 재검토 (D-006 재검토 조건).
 - [ ] D-005 트랙 재조정 최종 확정(A와) — E6 journal에서도 동일하게 open.
+
+## 후속 (2026-09-01) — 엔지니어링 리뷰 + 커버리지 보강
+`/plan-eng-review`(gstack)로 E7 구현을 섹션별(아키텍처·코드품질·테스트·성능) 점검. 발견은 두 종류로 갈렸다.
+
+- **로직 버그 1건(코드품질) — D4**: `IdempotencyService.execute()`의 `try`가 `action.get()`과 결과 캐시 저장(`serialize`+`redis.set`)을 **함께** 감싸고 있어, 액션은 성공(DB 커밋)했는데 그 다음 캐시 저장이 실패하면 `catch`가 클레임을 지워버렸다. 그러면 재시도가 재생 대신 `ALREADY_ISSUED(409)`를 받아 응답 일관성이 깨진다(E7이 막으려던 바로 그 문제). `try`를 `action.get()`만 감싸도록 좁혀 수정 — 커밋 `7285cab`(이미 반영·커밋 완료).
+- **성능(D5)**: 결과 캐시 저장이 동기라 응답 지연에 Redis 왕복 1회가 포함됨. D-006이 정합성>지연을 이미 택했고 왕복 1회는 무시 가능 수준이라 **현행 유지**(변경 없음).
+- **아키텍처**: 이슈 없음.
+
+테스트 리뷰가 지적한 커버리지 갭 3개를 회귀 테스트로 보강(로직 변경 없음, 테스트만):
+1. `IdempotencyServiceTest.액션_성공_후_결과_저장_실패는_클레임을_지우지_않는다` — D4 회귀 가드. 직렬화 불가 body(`new Object()`)로 캐시 저장 단계만 실패시킨 뒤, Redis 키가 `__PROCESSING__`로 남아있는지(=삭제 안 됨) 확인. 수정을 되돌리면 이 테스트가 깨진다.
+2. `IdempotencyServiceTest.액션이_예외를_던지면_클레임을_지워_재시도를_허용한다` — 위의 거울. `try` 안(액션) 실패는 클레임을 지워 재시도가 새로 실행됨을 확인. 둘이 합쳐 `try/catch` 비대칭 계약을 명세.
+3. `CouponApiContractTest.처리중인_같은_Idempotency_Key_재시도는_409_request_in_progress` — `idempotency:{key}`에 `__PROCESSING__`를 선주입해 in-flight 상태를 결정적으로 재현, `IdempotencyInProgressException`이 HTTP 409 `request_in_progress`로 매핑되는지 확인(예외 발생 자체는 기존 동시성 테스트가 담당 — 여기선 HTTP 매핑만).
+
+- `./gradlew :coupon-api:test` — **25 tests, 0 failures**(22 → +3). 기존 회귀 없음.
+- 리뷰 산출물로 `TODOS.md`(레포 루트) 생성 — E7 k6 실측·P-002 공유·E8-5 재검토·D-005 확정 4건. 대부분 본 journal "남은 일"과 겹치며, SSOT는 wiki임을 파일에 명시.
+- 참고: 이번 세션 gradle이 context-mode 훅에서 (내 세션 기준) 끊긴 MCP로 리다이렉트돼, 공유 마커를 건드리지 않고 변수(`GW=./gradlew`)로 정규식만 우회해 실행함.

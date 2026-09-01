@@ -7,9 +7,11 @@ import java.util.Map;
 import com.example.coupon.TestcontainersConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClient;
@@ -29,6 +31,8 @@ class CouponApiContractTest {
 
     @Value("${local.server.port}")
     int port;
+
+    @Autowired StringRedisTemplate redisTemplate;
 
     RestClient client;
 
@@ -178,5 +182,24 @@ class CouponApiContractTest {
         ResponseEntity<Map> dup = post("/api/coupons/" + couponId + "/issue", Map.of("userId", 555));
         assertThat(dup.getStatusCode().value()).isEqualTo(409);
         assertThat(dup.getBody()).containsEntry("error", "already_issued");
+    }
+
+    @Test
+    void 처리중인_같은_Idempotency_Key_재시도는_409_request_in_progress() {
+        // 아직 처리 중(PROCESSING)인 클레임이 이미 있을 때 같은 키가 또 오는 상태(동시 재시도)를 결정적으로 재현한다.
+        // 실제 동시성 하에서 예외가 던져지는 건 IdempotencyServiceTest가 검증 — 여기선 그 예외의 HTTP 매핑(409)만 본다.
+        ResponseEntity<Map> created = post("/api/coupons", Map.of("name", "idem-inflight", "totalQuantity", 5));
+        long couponId = ((Number) created.getBody().get("id")).longValue();
+
+        String idempotencyKey = "inflight-" + System.nanoTime();
+        redisTemplate.opsForValue().set("idempotency:" + idempotencyKey, "__PROCESSING__"); // PROCESSING_MARKER
+
+        ResponseEntity<Map> res = client.post().uri("/api/coupons/" + couponId + "/issue")
+                .header("Idempotency-Key", idempotencyKey)
+                .contentType(MediaType.APPLICATION_JSON).body(Map.of("userId", 780))
+                .retrieve().toEntity(Map.class);
+
+        assertThat(res.getStatusCode().value()).isEqualTo(409);
+        assertThat(res.getBody()).containsEntry("error", "request_in_progress");
     }
 }
