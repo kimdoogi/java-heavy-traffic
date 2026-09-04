@@ -4,10 +4,10 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import com.example.coupon.coupon.infra.IdempotencyRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
  * Idempotency-Key 재시도 방어 (PLAN E7, §1.2.1). SET NX로 키를 클레임한 요청만 액션을 실행하고,
  * 결과(상태코드+본문)를 같은 키에 캐시한다. 이후 같은 키 재시도는 액션을 다시 실행하지 않고
  * 캐시된 응답을 그대로 재생 — 중복 발급을 구조적으로 막고 응답을 일관되게 만든다.
+ * Redis 접근은 IdempotencyRepository가 캡슐화하고 서킷브레이커로 감싼다(E8) — 이 서비스는 흐름·직렬화만 담당한다.
  *
  * /issue 전용으로만 쓴다: 액션 실행 중 예외가 나면 클레임을 지우고 재시도를 허용하는데,
  * 이 규칙은 액션이 "전부 실행되거나 전부 안 되거나"일 때만 안전하다. issue-and-notify처럼
@@ -25,7 +26,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class IdempotencyService {
 
-    private static final String KEY_PREFIX = "idempotency:";
     private static final String PROCESSING_MARKER = "__PROCESSING__";
 
     // 이 서비스가 직렬화하는 건 {status, body}뿐이고 body는 컨트롤러가 만드는 String/Long/boolean 값의
@@ -35,39 +35,38 @@ public class IdempotencyService {
     //  있어도 빈이 없어 DI가 NoSuchBeanDefinitionException으로 깨짐 — P-002 참고. 직접 생성으로 회피.)
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private final StringRedisTemplate redis;
+    private final IdempotencyRepository repo;
     private final Duration lockTtl;
     private final Duration resultTtl;
 
-    public IdempotencyService(StringRedisTemplate redis,
+    public IdempotencyService(IdempotencyRepository repo,
                               @Value("${coupon.idempotency.lock-ttl-seconds}") long lockTtlSeconds,
                               @Value("${coupon.idempotency.result-ttl-seconds}") long resultTtlSeconds) {
-        this.redis = redis;
+        this.repo = repo;
         this.lockTtl = Duration.ofSeconds(lockTtlSeconds);
         this.resultTtl = Duration.ofSeconds(resultTtlSeconds);
     }
 
     public ResponseEntity<Map<String, Object>> execute(String idempotencyKey,
                                                         Supplier<ResponseEntity<Map<String, Object>>> action) {
-        String redisKey = KEY_PREFIX + idempotencyKey;
-        boolean claimed = Boolean.TRUE.equals(redis.opsForValue().setIfAbsent(redisKey, PROCESSING_MARKER, lockTtl));
+        boolean claimed = repo.claim(idempotencyKey, PROCESSING_MARKER, lockTtl);
         if (claimed) {
-            // 액션 실패만 delete 대상 — 액션은 성공했는데 그 결과를 캐시에 쓰는 이 다음 줄이 실패하는 경우까지
-            // 같이 지우면(과거 버그), 이미 커밋된 발급의 클레임을 즉시 날려버려 재시도가 재생 대신
-            // ALREADY_ISSUED를 받는다. 이 경우는 클래스 주석의 "결과 저장 전 크래시"와 같은 부류로 두고
-            // lockTtl 만료에 맡긴다(능동으로 지우지 않음).
+            // 액션 실패만 release 대상 — 액션은 성공했는데 그 결과를 캐시에 쓰는 다음 단계(serialize+store)가
+            // 실패하는 경우까지 같이 지우면(과거 D4 버그), 이미 커밋된 발급의 클레임을 즉시 날려버려 재시도가
+            // 재생 대신 ALREADY_ISSUED를 받는다. 이 경우는 클래스 주석의 "결과 저장 전 크래시"와 같은 부류로
+            // 두고 lockTtl 만료에 맡긴다(능동으로 지우지 않음). serialize도 store 인자 평가라 try 밖에서 실행된다.
             ResponseEntity<Map<String, Object>> response;
             try {
                 response = action.get();
             } catch (RuntimeException e) {
-                redis.delete(redisKey);
+                repo.release(idempotencyKey);
                 throw e;
             }
-            redis.opsForValue().set(redisKey, serialize(response), resultTtl);
+            repo.store(idempotencyKey, serialize(response), resultTtl);
             return response;
         }
 
-        String cached = redis.opsForValue().get(redisKey);
+        String cached = repo.find(idempotencyKey);
         if (cached == null || PROCESSING_MARKER.equals(cached)) {
             throw new IdempotencyInProgressException(idempotencyKey);
         }

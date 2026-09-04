@@ -3,6 +3,7 @@ package com.example.coupon.coupon.api;
 import java.util.Map;
 
 import com.example.coupon.coupon.application.IdempotencyInProgressException;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
@@ -26,6 +27,14 @@ public class CouponApiExceptionHandler {
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<Map<String, Object>> onDataAccess(DataAccessException e) {
         log.warn("storage failure on coupon api: {}", e.toString());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(Map.of("error", "storage_unavailable"));
+    }
+
+    /** Redis 서킷브레이커 OPEN — slow/실패 누적으로 회로가 끊긴 상태 (E8). timeout·단절과 같은 fail-closed로 503. */
+    @ExceptionHandler(CallNotPermittedException.class)
+    public ResponseEntity<Map<String, Object>> onCircuitOpen(CallNotPermittedException e) {
+        log.warn("redis circuit breaker OPEN — shedding load: {}", e.toString());
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(Map.of("error", "storage_unavailable"));
     }
