@@ -18,6 +18,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
 	implementation 'org.flywaydb:flyway-database-postgresql'
+	// E8 저항성: 서킷브레이커. 프로그래매틱 core만(스타터·AOP 없음) — Boot 4/Spring 7 AOP 호환 리스크 회피(P-002 교훈).
+	implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.2.0'
 	runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
 	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-actuator-test'

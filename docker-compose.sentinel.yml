@@ -1,0 +1,43 @@
+# E8 replica/Sentinel HA 실험 override (B 소유). 기존 단일-redis는 그대로, HA 토폴로지를 얹는다.
+#   docker compose -f docker-compose.yml -f docker-compose.sentinel.yml --profile sentinel up -d
+# override는 항상 --profile sentinel 과 함께 쓴다(coupon-api에 sentinel env가 붙으므로 sentinel들이 같이 떠야 함).
+# 기본(override·profile 없이)엔 replica/sentinel 안 뜨고 coupon-api도 standalone → E6/E7·기존 스택 무영향.
+# primary는 base compose의 redis 서비스. replica 1 + sentinel 3(quorum 2) = 최소 HA.
+name: heavy
+
+x-sentinel: &sentinel
+  image: redis:7-alpine
+  # sentinel은 런타임에 conf를 재작성하므로 :ro 마운트를 쓰기 가능한 곳으로 복사 후 실행.
+  command: ["sh", "-c", "cp /cfg/sentinel.conf /tmp/s.conf && redis-sentinel /tmp/s.conf"]
+  volumes:
+    - ./docker/redis-sentinel/sentinel.conf:/cfg/sentinel.conf:ro
+  depends_on:
+    redis: { condition: service_healthy }
+    redis-replica: { condition: service_started }
+  profiles: [sentinel]
+
+services:
+  redis-replica:
+    image: redis:7-alpine
+    command: ["redis-server", "--port", "6379", "--replicaof", "redis", "6379",
+              "--replica-announce-ip", "redis-replica", "--replica-announce-port", "6379"]
+    depends_on:
+      redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    profiles: [sentinel]
+
+  redis-sentinel-1: { <<: *sentinel }
+  redis-sentinel-2: { <<: *sentinel }
+  redis-sentinel-3: { <<: *sentinel }
+
+  # coupon-api를 sentinel 모드로: 프로파일 활성 + sentinel 노드 지정. base env에 병합된다(다른 값은 유지).
+  # profiles를 붙이지 않는다 — coupon-api는 base라 항상 떠야 하고, 이 override+profile로 실행할 때만 이 env가 적용된다.
+  coupon-api:
+    environment:
+      SPRING_PROFILES_ACTIVE: sentinel
+      REDIS_SENTINEL_MASTER: mymaster
+      REDIS_SENTINEL_NODES: redis-sentinel-1:26379,redis-sentinel-2:26379,redis-sentinel-3:26379

@@ -4,9 +4,11 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import com.example.coupon.coupon.application.CouponIssueService;
 import com.example.coupon.coupon.application.CouponService;
+import com.example.coupon.coupon.application.IdempotencyService;
 import com.example.coupon.coupon.domain.Coupon;
 import com.example.coupon.coupon.strategy.IssueResult;
 import com.example.coupon.external.NotificationClient;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -32,8 +35,10 @@ import org.springframework.web.bind.annotation.RestController;
  *  - POST /api/coupons/{id}/issue-and-notify    발급 + 외부 알림 (E8/E9 실전형)
  *  - GET  /api/users/{userId}/coupon-issues     사용자 발급 내역
  *
- * 상태코드 계약: 201 issued / 409 sold_out·already_issued / 503 retry_exhausted / 404 coupon_not_found.
+ * 상태코드 계약: 201 issued / 409 sold_out·already_issued·request_in_progress / 503 retry_exhausted / 404 coupon_not_found.
  * 응답의 `strategy`는 실효 설정 확인용 (k6에서 전략 실수 방지).
+ * `/issue`는 `Idempotency-Key` 헤더(선택)를 지원한다 — 같은 키 재시도는 최초 응답을 그대로 재생 (E7, PLAN §1.2.1).
+ * `issue-and-notify`는 미지원(IdempotencyService 클래스 주석 참고).
  */
 @RestController
 @RequestMapping("/api")
@@ -42,13 +47,16 @@ public class CouponController {
     private final CouponService couponService;
     private final CouponIssueService issueService;
     private final NotificationClient notificationClient;
+    private final IdempotencyService idempotencyService;
 
     public CouponController(CouponService couponService,
                             CouponIssueService issueService,
-                            NotificationClient notificationClient) {
+                            NotificationClient notificationClient,
+                            IdempotencyService idempotencyService) {
         this.couponService = couponService;
         this.issueService = issueService;
         this.notificationClient = notificationClient;
+        this.idempotencyService = idempotencyService;
     }
 
     record CreateCouponRequest(@NotBlank @Size(max = 100) String name, @Positive int totalQuantity) {
@@ -88,9 +96,16 @@ public class CouponController {
     }
 
     @PostMapping("/coupons/{id}/issue")
-    public ResponseEntity<Map<String, Object>> issue(@PathVariable long id, @Valid @RequestBody IssueRequest request) {
-        IssueResult result = issueService.issue(id, request.userId());
-        return toResponse(result, id, request.userId(), null);
+    public ResponseEntity<Map<String, Object>> issue(@PathVariable long id,
+                                                      @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+                                                      @Valid @RequestBody IssueRequest request) {
+        Supplier<ResponseEntity<Map<String, Object>>> action = () -> {
+            IssueResult result = issueService.issue(id, request.userId());
+            return toResponse(result, id, request.userId(), null);
+        };
+        return (idempotencyKey == null || idempotencyKey.isBlank())
+                ? action.get()
+                : idempotencyService.execute(idempotencyKey, action);
     }
 
     @PostMapping("/coupons/{id}/issue-and-notify")

@@ -62,15 +62,18 @@ public class RedisCouponStockRepository {
             """, Long.class);
 
     private final StringRedisTemplate redis;
+    private final RedisCircuitBreaker redisCb;
 
-    public RedisCouponStockRepository(StringRedisTemplate redis) {
+    public RedisCouponStockRepository(StringRedisTemplate redis, RedisCircuitBreaker redisCb) {
         this.redis = redis;
+        this.redisCb = redisCb;
     }
 
     public RedisIssueOutcome tryIssue(long couponId, long userId) {
-        Long result = redis.execute(ISSUE_SCRIPT,
+        // 발급 핫패스(매 /issue) — Redis 서킷브레이커로 감싼다(E8). slow/실패 누적 시 OPEN → CallNotPermittedException → 503.
+        Long result = redisCb.call(() -> redis.execute(ISSUE_SCRIPT,
                 List.of(stockKey(couponId), issuedKey(couponId), recoveryMarkerKey(couponId)),
-                String.valueOf(userId));
+                String.valueOf(userId)));
         if (result == null) {
             throw new IllegalStateException("redis issue script returned null (couponId=" + couponId + ")");
         }
@@ -122,7 +125,8 @@ public class RedisCouponStockRepository {
     }
 
     public Long getStock(long couponId) {
-        String v = redis.opsForValue().get(stockKey(couponId));
+        // 조회 핫패스(GET /coupons/{id}) — 발급과 같은 브레이커 공유. 보상·복구·조정 경로는 감싸지 않는다(오발·마스킹 방지).
+        String v = redisCb.call(() -> redis.opsForValue().get(stockKey(couponId)));
         return v == null ? null : Long.valueOf(v);
     }
 

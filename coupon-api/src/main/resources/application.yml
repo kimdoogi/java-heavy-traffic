@@ -23,6 +23,10 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+      # E8 저항성: 명령/연결 응답 상한. 없으면 Lettuce 기본(명령 60s)이라 hung Redis에서 무한 대기 → 커넥션 큐 적체.
+      # Hikari 3s·external 1s와 정렬. Redis 순수 지연은 <100ms이라 1s면 정상 부하 여유 + 60s hang을 1s로 단축.
+      timeout: ${REDIS_TIMEOUT_MS:1000}ms
+      connect-timeout: ${REDIS_CONNECT_TIMEOUT_MS:1000}ms
   lifecycle:
     timeout-per-shutdown-phase: 10s
 
@@ -60,6 +64,18 @@ coupon:
   issue:
     strategy: ${ISSUE_STRATEGY:redis}   # none | db-pessimistic | db-optimistic | redis (E6 실험 변수, PLAN §1.3)
     optimistic-max-retries: ${OPTIMISTIC_MAX_RETRIES:3}   # db-optimistic 전략의 version 충돌 재시도 상한
+  idempotency:
+    lock-ttl-seconds: ${IDEMPOTENCY_LOCK_TTL_SECONDS:30}     # 클레임(PROCESSING) 유지 상한 — 이 안에 액션이 끝나야 함 (E7)
+    result-ttl-seconds: ${IDEMPOTENCY_RESULT_TTL_SECONDS:600} # 캐시된 응답 재생 가능 기간
+  redis:
+    cb:                                                        # Redis 접근 서킷브레이커 (E8) — slow/실패 시 OPEN → 즉시 503
+      sliding-window-size: ${REDIS_CB_WINDOW:50}
+      minimum-calls: ${REDIS_CB_MIN_CALLS:20}                 # 이 수만큼 쌓여야 비율 평가 시작 (window 이하)
+      failure-rate-threshold: ${REDIS_CB_FAILURE_RATE:50}     # 실패(timeout·단절) 비율 % 임계
+      slow-call-rate-threshold: ${REDIS_CB_SLOW_RATE:50}      # 느린-성공 비율 % 임계
+      slow-call-duration-ms: ${REDIS_CB_SLOW_MS:300}          # 이 시간 초과 호출 = slow (정상<50ms, 저하~400ms)
+      wait-in-open-ms: ${REDIS_CB_WAIT_OPEN_MS:5000}          # OPEN 유지 후 half-open 회복 탐색
+      permitted-in-half-open: ${REDIS_CB_HALF_OPEN:5}
 
 external:
   base-url: ${EXTERNAL_BASE_URL:http://localhost:8081}

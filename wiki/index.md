@@ -11,17 +11,19 @@ tags: [index]
 > 워크플로우 규칙: [../CLAUDE.md](../CLAUDE.md) · 사용법: [howto/wiki-workflow.md](howto/wiki-workflow.md)
 
 ## 현재 상태
-- **단계**: 2주차 A 트랙 완료(E2·E3·E5, P-003) + 3주차 쿠폰 도메인 구현 완료(4전략, 동시성 테스트 통과). 2인 협업([D-005](decisions/D-005-two-person-track-split.md)): A(kimdoogi)=런타임·자원, B(popogustn)=도메인·장애 — **쿠폰 도메인은 A가 선구현, popogustn과 조정 공유 필요**
-- **다음 작업**: A → 50-flash-sale.js·verify-coupon.sh 작성 → E6, E4(이제 실행 가능), E10(GC) · B → 트랙 조정 협의 후 E7~E9·E13
-- **진행 중 journal**: [2026-08-27 E6 실험 (B)](journal/2026-08-27-e6-flash-sale.md) — ⚠️ line 위 "다음 작업"은 A가 E6툴 예정으로 기록, B가 실제 착수함 → 트랙 조정 필요
+- **단계**: 2주차 A 트랙 완료(E2·E3·E5, P-003) + 3주차 쿠폰 도메인 구현 완료(4전략, 동시성 테스트 통과) + E6(선착순 정합성) + E7(멱등성) + E8(Redis 저항성: timeout+서킷브레이커) 구현·실측 완료. 2인 협업([D-005](decisions/D-005-two-person-track-split.md), 2026-08-27 갱신): 쿠폰 도메인은 A(kimdoogi)가 선구현(PR #3), E6은 B(popogustn)가 이어받아 실행(PR #4, `scripts/verify-coupon.sh`·`reset-db.sh`도 B 작성) — **현행 조정안**: A=도메인 구현+런타임·자원(E3·E4·E5·E10~E12), B=E6·E7·E8·E9·E13. D-005 갱신은 popogustn 단독 초안이라 A 최종 합의 필요
+- **다음 작업**: A → E4(이제 실행 가능), E10(GC), D-005 갱신 확인 · B → E7 experiment md 작성, E9(Resilience 심화: bulkhead·readiness)·E13(백프레셔). E8(timeout+브레이커+replica/Sentinel) 완료
+- **진행 중 journal**: 없음
 - **열린 문제(open)**: 없음
-- **다음 번호**: A(홀수) → P-007 · D-007 · B(짝수) → P-002 · D-006
+- **다음 번호**: A(홀수) → P-007 · D-007 · B(짝수) → P-004 · D-010
 
 ## 마스터 문서
 - [PLAN.md](../PLAN.md) — 실험 E1~E13, 뼈대 구조, 로컬↔클라우드 매핑, 로드맵
 
 ## Journal (작업 기록, 최신순)
-- [2026-08-27 E6 — 선착순 정합성 실험 (4전략 부하 비교)](journal/2026-08-27-e6-flash-sale.md) — in-progress
+- [2026-09-01 E8 — Redis 저항성 (timeout + 서킷브레이커)](journal/2026-09-01-E8-redis-resilience.md) — done
+- [2026-08-27 E7 — 멱등성(Idempotency-Key) 구현](journal/2026-08-27-E7-idempotency.md) — done
+- [2026-08-27 E6 — 선착순 정합성 실험 (4전략 부하 비교)](journal/2026-08-27-e6-flash-sale.md) — done (PR #4 머지 확인 후 상태 정정, D-005 트랙 재조정 A 확정만 남음)
 - [2026-08-26 쿠폰 도메인 — 선착순 발급 4전략 구현](journal/2026-08-26-coupon-domain.md) — done
 - [2026-08-25 P-003 — pinned 천장 원인 탐색](journal/2026-08-25-p003-pinned-ceiling.md) — done
 - [2026-08-24 E5 — Pinning 재현](journal/2026-08-24-E5-pinning.md) — done
@@ -37,6 +39,7 @@ tags: [index]
 - [2026-08-19 계획 수립 & 위키 체계 구축](journal/2026-08-19-plan-and-wiki-setup.md) — done
 
 ## Problems (문제 → 해결)
+- [P-002 Spring Boot 4/Spring 7에서 Jackson 2 ObjectMapper DI가 NoSuchBeanDefinitionException](problems/P-002-jackson2-objectmapper-no-bean.md) — solved (Jackson 3이 기본 빈, 직접 `new ObjectMapper()`로 회피)
 - [P-001 로컬 JDK 21 소실로 빌드 실패](problems/P-001-jdk21-missing-build-fail.md) — solved (foojay resolver)
 - [P-003 pinned 천장이 CPU 수와 무관하게 ~37.5rps](problems/P-003-pinned-ceiling-not-scaling.md) — solved (실효 캐리어 수≠CPU 수: M=1+보상1, L=2+0의 우연. parallelism·maxPoolSize 조작으로 검증)
 - [P-005 lock 런 pinned-count가 sync 런 잔재로 오염](problems/P-005-pinned-count-carryover.md) — solved (0건 정정, 컨테이너 로그 timestamp 검증)
@@ -47,8 +50,11 @@ tags: [index]
 - [D-003 LLM-wiki 방식의 작업·기록 루프](decisions/D-003-llm-wiki-workflow.md) — accepted
 - [D-004 Spring Boot 4.0.x 채택](decisions/D-004-spring-boot-4.md) — accepted
 - [D-005 2인 협업 — 실험 트랙 분할 (A=kimdoogi, B=popogustn)](decisions/D-005-two-person-track-split.md) — accepted
+- [D-006 Idempotency-Key: Redis SET NX 클레임 + /issue 전용 스코프](decisions/D-006-idempotency-redis-claim.md) — accepted
+- [D-008 Redis 저항성: command timeout + 프로그래매틱 Resilience4j 서킷브레이커](decisions/D-008-redis-resilience.md) — accepted
 
 ## Experiments (실험)
+- [E8 Redis 저항성 — timeout + 서킷브레이커 (장애 주입)](experiments/E8-redis-resilience.md) — done (DEAD: timeout 1s bound·pileup 0 / SLOW: 브레이커 없이 2.9~5.3s → 브레이커 OPEN시 fast-fail 503 p50 0.955ms)
 - [E6 선착순 정합성 — 4전략 부하 비교](experiments/E6-flash-sale-consistency.md) — done (pool=50 격리: none 초과 +4,000 붕괴 / pessimistic·redis 정합성0, 520·549rps / optimistic 재시도폭증 503 72%)
 - [E6 크로스오버 — 동시성·수직 pessimistic vs redis](experiments/E6-crossover-concurrency.md) — done (1cpu 동률=CPU-bound / 2cpu선 redis 2.3배·pessimistic 500. 결론=스케일 의존: 소형→pessimistic, 스케일→redis)
 - [E5 Pinning 재현 — synchronized vs ReentrantLock](experiments/E5-pinning.md) — done (37.5 vs 1,541~1,994rps, 41~53배. P-003 파생)
@@ -61,7 +67,8 @@ tags: [index]
 - [쓰레드 풀 천장과 백프레셔](concepts/thread-ceiling-and-backpressure.md) — solid (E2 기반, 면접 답변 포함)
 - [VT 캐리어 풀과 pinning 천장](concepts/vt-carrier-pool-and-pinning.md) — solid (E5·P-003 기반, 면접 답변 포함)
 - [Redis 원자 재고 차감 — hot-row 제거](concepts/redis-atomic-stock.md) — solid (E6 기반, 면접 답변 포함)
-- 예정: virtual-thread-basics, virtual-thread-observability, hikari-pool-sizing, k6-open-vs-closed-model, coordinated-omission, circuit-breaker-bulkhead, idempotency
+- [Redis 장애 저항성 — timeout·서킷브레이커·Lettuce·HA](concepts/redis-failure-resilience.md) — solid (E8 기반, 면접 답변 포함)
+- 예정: virtual-thread-basics, virtual-thread-observability, hikari-pool-sizing, k6-open-vs-closed-model, coordinated-omission, bulkhead, idempotency
 
 ## Howto (런북)
 - [wiki-workflow.md](howto/wiki-workflow.md) — 위키 사용법
