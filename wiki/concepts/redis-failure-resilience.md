@@ -48,6 +48,7 @@ Lettuce = Spring Boot 기본 Redis 클라이언트(앱 JVM 안, netty 기반).
 - Sentinel(감시자) N + primary + replica N. primary 죽으면 replica **자동 승격**(수 초).
 - 앱은 단일 host 대신 sentinel 노드를 설정(`spring.data.redis.sentinel.*`) → Lettuce가 "현재 primary?"를 동적으로 물어 연결, failover 시 topology refresh로 새 primary 재연결(**런타임**, 재시작·env 변경 불가).
 - 즉 timeout/브레이커(다운 동안 거동) + Sentinel(다운 길이) = 완전한 저항성.
+- **E8 실측**: 앱 sentinel 모드(프로파일 게이트, 단일모드 공존)에서 primary stop → **~4s만에 앱이 승격된 replica로 자동 재연결**(코드·재시작 없이). 창 상한은 `down-after`+`failover-timeout` 설정이 정함. Docker 함정(주소 announce)은 `resolve/announce-hostnames yes`로 회피.
 
 ## 7. 무손상 — 다운이어도 망가지진 않음
 - **fail-closed**: Redis 장애 시 503 거부(조용히 발급 안 함). 초과발급 0.

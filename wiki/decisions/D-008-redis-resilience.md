@@ -42,4 +42,5 @@ related: [../experiments/E8-redis-resilience.md, ../concepts/redis-failure-resil
 ## 결과
 - DEAD·SLOW 모두 앱이 graceful(빠른 503, 자동 복구). 28 tests green(`RedisCircuitBreakerTest` 포함).
 - 공유 경로 변경: `build.gradle`(resilience4j 의존성)·`docker-compose.yml`(REDIS_HOST override)·`RedisCouponStockRepository`(A 코드 감쌈) — D-005상 A 합의 대상(플래그).
-- **defer**: replica/Sentinel(outage 길이 축), 브레이커 메트릭, bulkhead, readiness gating. timeout/브레이커는 다운 "동안" 거동, replica는 다운 "길이" — 다른 축이라 다음 슬라이스.
+- **replica/Sentinel 슬라이스 완료(2026-09-01)**: redis+replica+sentinel×3(quorum 2), B override(`docker-compose.sentinel.yml`)+프로파일 게이트(`application-sentinel.yml`, 단일모드 공존, **앱 코드 0**). 앱-following failover **~4s** 실측 — timeout/브레이커(다운 "동안")와 다른 축(다운 "길이")을 채움. [E8 실험](../experiments/E8-redis-resilience.md) replica/Sentinel 절.
+- **defer(후속)**: 브레이커 메트릭(Prometheus), bulkhead, readiness gating, replica 2+·멀티노드 조정(E12).

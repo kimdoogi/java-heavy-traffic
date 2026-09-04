@@ -64,6 +64,28 @@ stop 버스트 : max 1.02s, pileup 0
 4. **서킷브레이커가 SLOW를 fast-fail로 전환.** 느린 호출 누적 → OPEN → 즉시 503(p50 0.955ms) + Redis 부하 차단. "3~5s 느린-성공"을 "~1ms 빠른-실패"로. **posture 선택**(serve-slow vs fail-fast)이지 throughput 개선이 아님 — before도 다 성공했고 after는 다 실패. 선착순 correctness-first엔 fast-fail이 나음(빠른 피드백 + Redis 회복).
 5. 연결 풀(`lettuce.pool`)은 throughput 축, 브레이커는 posture 축 — 상보적. 브레이커를 택한 건 "느린-성공을 빠른-실패로 + 부하 차단"이 목적이라서(D-008).
 
+## replica/Sentinel — outage "길이" 축 (2026-09-01 추가)
+timeout+브레이커가 "다운 **동안**" 거동이라면, Sentinel은 "다운이 **얼마나 오래**"를 자동 failover로 줄인다.
+
+### 설정
+- 토폴로지: redis(primary) + redis-replica(1) + sentinel×3(quorum 2). B 소유 override `docker-compose.sentinel.yml`(shared compose 안 건드림) + `application-sentinel.yml`(프로파일 게이트 → 단일모드 공존). **앱 코드 변경 0**(Spring Data Redis가 sentinel 모드 처리).
+- Docker 주소 함정 회피: sentinel `resolve/announce-hostnames yes` → get-master-addr가 도달 가능 호스트명(`redis`) 반환(127.0.0.1 함정 X). Step 0에서 격리 검증.
+
+### 결과 (앱 sentinel 모드, `docker compose stop redis`)
+```
+baseline: 201
+t=0  primary stop
+t=1~3s: 503   (failover 창 — 앱은 timeout/브레이커로 fast-fail)
+t=4s:  201    ← 앱이 승격된 redis-replica로 자동 재연결(코드·재시작 없이)
+master = redis-replica (sentinel 승격 확인)
+```
+- **failover+재연결 창 ~4s.** 창 상한은 `down-after-milliseconds`(5s)+`failover-timeout`(10s) 설정이 정함 — clean stop은 연결 RESET 즉시 감지라 down-after보다 빠름. 단일 Redis의 "사람이 고칠 때까지(분+)"를 "~4s"로.
+
+### 해석
+- **two-layer 완성**: 다운 **동안** = timeout+브레이커 fast-fail(안 쌓임), 다운 **길이** = Sentinel auto-failover(~4s). "Redis 죽으면?" → 앱은 버티고 Sentinel이 초 단위로 새 primary 전환.
+- failover는 무손실 아님 — async 복제라 승격 순간 마지막 write 몇 개 유실 가능. 근데 Redis=재생 캐시 / DB=진실이라 **중복 발급은 없음**(fail-closed + unique 제약).
+
 ## 남은 것
-- replica/Sentinel = outage "길이"(다운 지속시간)를 자동 failover로 줄이는 별개 축. 이번 스코프 밖(다음 슬라이스).
-- 브레이커 상태 메트릭(Prometheus), bulkhead, readiness gating = 후속.
+- 브레이커 상태 메트릭(Prometheus)·bulkhead·readiness gating = 후속.
+- k6-under-load failover 창(throughput 관점) — 1/s poll이 ~4s를 줬으므로 정밀 측정은 선택.
+- 실 프로덕션 replica 2+ (failover 후 재이중화), 멀티노드 조정(E12).

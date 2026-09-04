@@ -54,7 +54,7 @@ docker compose up -d --force-recreate coupon-api   # direct redis 복원
 - Boot 4에선 스타터/AOP보다 프로그래매틱 라이브러리가 안전(P-002 재현 회피).
 
 ## 남은 일 / 다음 단계
-- [ ] replica/Sentinel 슬라이스 — outage 길이(자동 failover 초 단위). `spring.data.redis.sentinel.*`, compose 토폴로지.
+- [x] replica/Sentinel 슬라이스 (2026-09-01 완료) — redis+replica+sentinel×3(quorum 2), B override `docker-compose.sentinel.yml`(shared 안 건드림)+`application-sentinel.yml`(프로파일 게이트, 단일모드 공존, **앱 코드 0**). advisor 조언대로 위험지점(Docker 주소 해석) 먼저 격리 검증 → 수동 failover → 앱-following failover. **앱이 primary stop 후 ~4s만에 승격된 replica로 자동 재연결(발급 복구)**. two-layer 완성(다운 동안=브레이커, 다운 길이=Sentinel). [E8](../experiments/E8-redis-resilience.md) replica/Sentinel 절.
 - [ ] 브레이커 상태 Prometheus 메트릭 + Grafana(관측), bulkhead, readiness gating.
 - [ ] build.gradle·docker-compose·RedisCouponStockRepository 공유/ A 경로 변경 → kimdoogi 합의(D-005).
 - [ ] (E7 잔여) `wiki/experiments/E7-idempotency.md` — E7 부하 실측은 results/E7-*에 있으나 experiment md 미작성.

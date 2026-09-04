@@ -12,7 +12,7 @@ tags: [index]
 
 ## 현재 상태
 - **단계**: 2주차 A 트랙 완료(E2·E3·E5, P-003) + 3주차 쿠폰 도메인 구현 완료(4전략, 동시성 테스트 통과) + E6(선착순 정합성) + E7(멱등성) + E8(Redis 저항성: timeout+서킷브레이커) 구현·실측 완료. 2인 협업([D-005](decisions/D-005-two-person-track-split.md), 2026-08-27 갱신): 쿠폰 도메인은 A(kimdoogi)가 선구현(PR #3), E6은 B(popogustn)가 이어받아 실행(PR #4, `scripts/verify-coupon.sh`·`reset-db.sh`도 B 작성) — **현행 조정안**: A=도메인 구현+런타임·자원(E3·E4·E5·E10~E12), B=E6·E7·E8·E9·E13. D-005 갱신은 popogustn 단독 초안이라 A 최종 합의 필요
-- **다음 작업**: A → E4(이제 실행 가능), E10(GC), D-005 갱신 확인 · B → E8 replica/Sentinel 슬라이스(outage 길이·자동 failover), E7 experiment md 작성, E9(Resilience 심화)·E13(백프레셔)
+- **다음 작업**: A → E4(이제 실행 가능), E10(GC), D-005 갱신 확인 · B → E7 experiment md 작성, E9(Resilience 심화: bulkhead·readiness)·E13(백프레셔). E8(timeout+브레이커+replica/Sentinel) 완료
 - **진행 중 journal**: 없음
 - **열린 문제(open)**: 없음
 - **다음 번호**: A(홀수) → P-007 · D-007 · B(짝수) → P-004 · D-010

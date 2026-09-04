@@ -1,0 +1,10 @@
+# sentinel 프로파일 (E8 HA) — SPRING_PROFILES_ACTIVE=sentinel 일 때만 로드된다.
+# 이 블록이 존재하면 Spring Data Redis가 Sentinel 모드로 연결: 단일 host/port 대신 sentinel 노드들에게
+# "현재 primary?"를 물어 동적 연결하고, failover 시 topology refresh로 새 primary에 자동 재연결한다.
+# 프로파일 미활성(기본)이면 이 파일이 로드되지 않아 application.yml의 단일 host/port(standalone)로 동작 — 두 모드 공존.
+spring:
+  data:
+    redis:
+      sentinel:
+        master: ${REDIS_SENTINEL_MASTER:mymaster}
+        nodes: ${REDIS_SENTINEL_NODES:redis-sentinel-1:26379,redis-sentinel-2:26379,redis-sentinel-3:26379}
