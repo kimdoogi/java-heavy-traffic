@@ -24,9 +24,13 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       # E8 저항성: 명령/연결 응답 상한. 없으면 Lettuce 기본(명령 60s)이라 hung Redis에서 무한 대기 → 커넥션 큐 적체.
-      # Hikari 3s·external 1s와 정렬. Redis 순수 지연은 <100ms이라 1s면 정상 부하 여유 + 60s hang을 1s로 단축.
+      # 값 근거(측정): redis-benchmark로 Redis를 0.5 CPU 포화(50k+ ops/s)시켰을 때 지연 p50 0.2ms·p95 0.7ms·
+      #   p99 ~73ms·max ~85ms. p99 꼬리는 0.5 CPU cgroup throttle(주기 quota 소진 시 ~50ms 얼어붙음) 특성.
+      #   → 1s = 혼잡 max(85ms)의 ~12배 헤드룸 = "1초 넘으면 정상(throttle 포함) 지연 아니라 확실히 멈춘 것" (D-008).
+      # ghost 각주: timeout 시 Lua 실행 여부 불명이라 재고 ghost가 날 수 있으나(P-004), 재시도가 healGhostOrReject로
+      #   치유하므로 timeout 값을 ghost 때문에 늘릴 필요 없음. fast-fail(짧게)은 서킷브레이커와 함께 저항성 담당.
       timeout: ${REDIS_TIMEOUT_MS:1000}ms
-      connect-timeout: ${REDIS_CONNECT_TIMEOUT_MS:1000}ms
+      connect-timeout: ${REDIS_CONNECT_TIMEOUT_MS:1000}ms   # 연결 거부는 명령 미실행이라 ghost 무관
   lifecycle:
     timeout-per-shutdown-phase: 10s
 

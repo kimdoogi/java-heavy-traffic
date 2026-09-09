@@ -14,8 +14,8 @@ tags: [index]
 - **단계**: 2주차 A 트랙 완료(E2·E3·E5, P-003) + 3주차 쿠폰 도메인 구현 완료(4전략, 동시성 테스트 통과) + E6(선착순 정합성) + E7(멱등성) + E8(Redis 저항성: timeout+서킷브레이커) 구현·실측 완료. 2인 협업([D-005](decisions/D-005-two-person-track-split.md), 2026-08-27 갱신): 쿠폰 도메인은 A(kimdoogi)가 선구현(PR #3), E6은 B(popogustn)가 이어받아 실행(PR #4, `scripts/verify-coupon.sh`·`reset-db.sh`도 B 작성) — **현행 조정안**: A=도메인 구현+런타임·자원(E3·E4·E5·E10~E12), B=E6·E7·E8·E9·E13. D-005 갱신은 popogustn 단독 초안이라 A 최종 합의 필요
 - **다음 작업**: A → E4(이제 실행 가능), E10(GC), D-005 갱신 확인 · B → E7 experiment md 작성, E9(Resilience 심화: bulkhead·readiness)·E13(백프레셔). E8(timeout+브레이커+replica/Sentinel) 완료
 - **진행 중 journal**: 없음
-- **열린 문제(open)**: 없음
-- **다음 번호**: A(홀수) → P-007 · D-007 · B(짝수) → P-004 · D-010
+- **열린 문제(open)**: 없음 ([P-004](problems/P-004-redis-timeout-ghost-issue.md) ghost는 retry self-heal로 solved — never-retry 런타임 잔여만 async 조정 후속)
+- **다음 번호**: A(홀수) → P-007 · D-007 · B(짝수) → P-006 · D-010
 
 ## 마스터 문서
 - [PLAN.md](../PLAN.md) — 실험 E1~E13, 뼈대 구조, 로컬↔클라우드 매핑, 로드맵
@@ -39,6 +39,7 @@ tags: [index]
 - [2026-08-19 계획 수립 & 위키 체계 구축](journal/2026-08-19-plan-and-wiki-setup.md) — done
 
 ## Problems (문제 → 해결)
+- [P-004 Redis 응답 지연 시 ghost 발급 — tryIssue timeout 미보상](problems/P-004-redis-timeout-ghost-issue.md) — solved (retry self-heal: Lua -1인데 DB 없으면 그 자리서 기록 → 재시도 409잠김 해소. timeout 3s·관측 카운터 병행. never-retry 잔여는 async 조정 후속)
 - [P-002 Spring Boot 4/Spring 7에서 Jackson 2 ObjectMapper DI가 NoSuchBeanDefinitionException](problems/P-002-jackson2-objectmapper-no-bean.md) — solved (Jackson 3이 기본 빈, 직접 `new ObjectMapper()`로 회피)
 - [P-001 로컬 JDK 21 소실로 빌드 실패](problems/P-001-jdk21-missing-build-fail.md) — solved (foojay resolver)
 - [P-003 pinned 천장이 CPU 수와 무관하게 ~37.5rps](problems/P-003-pinned-ceiling-not-scaling.md) — solved (실효 캐리어 수≠CPU 수: M=1+보상1, L=2+0의 우연. parallelism·maxPoolSize 조작으로 검증)

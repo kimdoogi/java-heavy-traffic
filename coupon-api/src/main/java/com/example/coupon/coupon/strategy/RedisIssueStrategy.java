@@ -8,9 +8,12 @@ import com.example.coupon.coupon.infra.CouponIssueRepository;
 import com.example.coupon.coupon.infra.CouponRepository;
 import com.example.coupon.coupon.infra.RedisCouponStockRepository;
 import com.example.coupon.coupon.infra.RedisIssueOutcome;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.QueryTimeoutException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -39,17 +42,39 @@ public class RedisIssueStrategy implements IssueStrategy {
     private final CouponIssueRepository issueRepository;
     private final JdbcClient jdbc;
     private final TransactionTemplate tx;
+    private final Counter ambiguousIssues;
 
     public RedisIssueStrategy(RedisCouponStockRepository stockRepository,
                               CouponRepository couponRepository,
                               CouponIssueRepository issueRepository,
                               JdbcClient jdbc,
-                              PlatformTransactionManager transactionManager) {
+                              PlatformTransactionManager transactionManager,
+                              MeterRegistry meterRegistry) {
         this.stockRepository = stockRepository;
         this.couponRepository = couponRepository;
         this.issueRepository = issueRepository;
         this.jdbc = jdbc;
         this.tx = new TransactionTemplate(transactionManager);
+        this.ambiguousIssues = Counter.builder("coupon_issue_ambiguous")
+                .description("tryIssue(Lua)가 timeout으로 ambiguous하게 끝난 횟수 — Redis가 실행했는데 응답 지연으로 앱이 포기하면 "
+                        + "재고 깎이고 명단 있는데 DB 없는 ghost가 남을 수 있다 (P-004). 재시도는 healGhostOrReject가 DB에 기록해 치유하고, "
+                        + "재시도 안 하는 잔여는 기동 조정/async가 정리 — 이 카운터는 그 빈도 관측용.")
+                .register(meterRegistry);
+    }
+
+    /**
+     * tryIssue를 감싸 timeout(ambiguous) 발생을 관측한다. QueryTimeoutException은 "Redis가 Lua를 실행했는지
+     * 클라가 알 수 없는" 상태 — ghost 후보. 카운터+warn만 남기고 예외는 그대로 전파(503). 근본 해소는 조정 배치(별도 PR).
+     */
+    private RedisIssueOutcome tryIssueObserved(long couponId, long userId) {
+        try {
+            return stockRepository.tryIssue(couponId, userId);
+        } catch (QueryTimeoutException e) {
+            ambiguousIssues.increment();
+            log.warn("redis tryIssue ambiguous(timeout) — 재고 ghost 가능(재고 차감·명단 등록됐는데 DB 미기록일 수 있음), "
+                    + "재시도가 409로 잠길 수 있음 (couponId={}, userId={})", couponId, userId, e);
+            throw e;
+        }
     }
 
     @Override
@@ -59,14 +84,14 @@ public class RedisIssueStrategy implements IssueStrategy {
 
     @Override
     public IssueResult issue(long couponId, long userId) {
-        RedisIssueOutcome outcome = stockRepository.tryIssue(couponId, userId);
+        RedisIssueOutcome outcome = tryIssueObserved(couponId, userId);
 
         if (outcome == RedisIssueOutcome.UNINITIALIZED) {
             IssueResult notFound = recoverKeys(couponId);
             if (notFound != null) {
                 return notFound;
             }
-            outcome = stockRepository.tryIssue(couponId, userId);
+            outcome = tryIssueObserved(couponId, userId);
             if (outcome == RedisIssueOutcome.UNINITIALIZED) {
                 // 복구 직후 또 유실 — 재고 게이트 없이 발급을 진행하면 안 되므로 실패시킨다 (재요청으로 해소)
                 throw new IllegalStateException(
@@ -75,7 +100,7 @@ public class RedisIssueStrategy implements IssueStrategy {
         }
 
         return switch (outcome) {
-            case ALREADY_ISSUED -> IssueResult.ALREADY_ISSUED;
+            case ALREADY_ISSUED -> healGhostOrReject(couponId, userId);
             case SOLD_OUT -> IssueResult.SOLD_OUT;
             case ISSUED -> recordIssue(couponId, userId);
             case ISSUED_RECOVERING -> recordIssueWithDbBackstop(couponId, userId);
@@ -98,6 +123,26 @@ public class RedisIssueStrategy implements IssueStrategy {
         log.warn("redis keys missing — rebuilt from DB: couponId={} stock={} issuedMembers={} (복구 구간 발급은 DB 백스톱 경유)",
                 couponId, stock, issued.size());
         return null;
+    }
+
+    /**
+     * Lua가 -1(명단에 이미 있음)을 반환한 경우 처리. DB에 발급 이력이 있으면 진짜 중복(ALREADY_ISSUED),
+     * 없으면 이전 timeout ghost(재고 깎이고 명단 등록됐는데 DB 미기록, P-004) → 지금 DB에 기록해 치유한다.
+     * 재고는 ghost 시점에 이미 소비됐으므로 새로 깎지 않는다(명단 멤버 1개 = 소비 1단위 ≤ total, 초과발급 아님).
+     * 재시도가 409로 영구 잠기던 문제를 재시도 그 자리에서 sync로 해소. 동시 치유 경합은 unique 제약이 잡는다.
+     * (never-retry ghost는 기동 조정이 forward-recover — 런타임 주기 조정/ZSET 유예는 async 후속.)
+     */
+    private IssueResult healGhostOrReject(long couponId, long userId) {
+        if (issueRepository.existsByCouponIdAndUserId(couponId, userId)) {
+            return IssueResult.ALREADY_ISSUED;   // 진짜 중복
+        }
+        try {
+            issueRepository.save(new CouponIssue(couponId, userId));   // ghost 치유: 소비된 단위를 DB에 반영
+            log.info("ghost 치유 — 명단엔 있으나 DB 없던 발급을 재시도 시 기록 (couponId={}, userId={})", couponId, userId);
+            return IssueResult.ISSUED;
+        } catch (DataIntegrityViolationException e) {
+            return IssueResult.ALREADY_ISSUED;   // 동시 치유 경합 → 이미 기록됨
+        }
     }
 
     /** 정상 경로: DB에는 INSERT만. 실패 시 보상으로 재고를 되돌린다. */

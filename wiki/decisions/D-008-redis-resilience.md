@@ -23,7 +23,9 @@ related: [../experiments/E8-redis-resilience.md, ../concepts/redis-failure-resil
 
 ## 결정
 **3 + B.** command timeout(1s) + **프로그래매틱 Resilience4j** 서킷브레이커.
-- `spring.data.redis.timeout/connect-timeout = 1000ms` (Hikari 3s·external 1s와 정렬).
+- `spring.data.redis.timeout = 1000ms`(command), `connect-timeout = 1000ms`. **값 근거(측정)**: 처음엔 앱 부하(55 storm)로 쟀는데 그건 Redis를 안 밀어(CPU 0.71%) 1~5ms만 나왔음 — **혼잡이 아니었음**. `redis-benchmark`로 Redis를 **0.5 CPU 포화**(50k+ ops/s)시켜 다시 측정: p50 0.2ms · p95 0.7ms · **p99 ~73ms · max ~85ms**(SET/GET/EVAL 공통). p99 꼬리는 0.5 CPU **cgroup throttle**(주기 quota 소진 시 ~50ms 얼어붙음) 특성 — 풀 CPU면 작아짐. → **1s = 혼잡 max(85ms)의 ~12배 헤드룸** = "1초 넘으면 throttle 포함 정상 지연 아니라 확실히 멈춘 것" → 1s 정당(헤드룸 200×가 아니라 ~12×로 정정).
+  - **리뷰 반영 경위**: 리뷰에서 "1s 근거 없음 + timeout↓ = ghost↑"([P-004](../problems/P-004-redis-timeout-ghost-issue.md)) 지적 → 잠정 3s로 올렸다가, (1) ghost를 **retry self-heal**로 근본 해결(P-004)해 timeout의 ghost-의존이 사라졌고 (2) 지연 분포를 실측해 1s의 200배 헤드룸을 확인 → **1s 복귀**(fast-fail 유리). ghost는 값과 무관하게 heal이 처리.
+  - **trade-off**: timeout↓ = hang을 빨리 끊음(fast-fail) / timeout↑ = ghost 빈도만 미세 감소(근데 heal이 해결하므로 무의미). 측정상 Redis 지연 <5ms라 1s는 hang 판정에 충분.
 - `RedisCircuitBreaker`(infra) 공용 1개 — idempotency(`IdempotencyRepository`)·재고(`RedisCouponStockRepository`)가 공유(Redis 하나=브레이커 하나).
 - **Redis 연산만 감쌈**, DB·직렬화 제외(DB 지연을 Redis 실패로 오발 방지).
 - OPEN → `CallNotPermittedException` → 기존 timeout·단절과 **같은 503 storage_unavailable**(fail-closed 일관).

@@ -202,4 +202,27 @@ class CouponApiContractTest {
         assertThat(res.getStatusCode().value()).isEqualTo(409);
         assertThat(res.getBody()).containsEntry("error", "request_in_progress");
     }
+
+    @Test
+    void 재고는_깎였는데_DB없는_ghost는_재시도에_치유된다() {
+        // P-004: Redis 응답 지연으로 Lua는 실행됐는데(재고↓·명단 등록) 앱이 timeout해 DB 미기록 = ghost.
+        // 예전엔 재시도가 SISMEMBER=-1 → 409로 영구 잠김. 이제 재시도가 DB에 기록해 치유(201), 재고는 그대로.
+        ResponseEntity<Map> created = post("/api/coupons", Map.of("name", "ghost-heal", "totalQuantity", 10));
+        long couponId = ((Number) created.getBody().get("id")).longValue();
+        long userId = 9999;
+
+        // ghost 상태 주입: 발급자 set에 userId(멤버 존재) + 재고 1 감소, DB row 없음.
+        redisTemplate.opsForSet().add("coupon:" + couponId + ":issued", String.valueOf(userId));
+        redisTemplate.opsForValue().decrement("coupon:" + couponId + ":stock");
+
+        // 재시도 → Lua가 -1(명단 있음) → healGhostOrReject → DB 없으니 기록 → 201
+        ResponseEntity<Map> retry = post("/api/coupons/" + couponId + "/issue", Map.of("userId", userId));
+        assertThat(retry.getStatusCode().value()).isEqualTo(201);
+        assertThat(retry.getBody()).containsEntry("result", "issued");
+
+        // DB에 기록됨 + 재고는 치유가 다시 깎지 않아 9 유지(1 소비 = 1 발급 정합)
+        ResponseEntity<List> issues = client.get().uri("/api/users/" + userId + "/coupon-issues").retrieve().toEntity(List.class);
+        assertThat(issues.getBody()).hasSize(1);
+        assertThat(redisTemplate.opsForValue().get("coupon:" + couponId + ":stock")).isEqualTo("9");
+    }
 }
