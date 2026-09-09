@@ -8,6 +8,8 @@ out/
 .idea/
 *.iml
 .vscode/
+# Eclipse/VSCode-Java 컴파일 출력 (Gradle은 build/ 사용)
+bin/
 .DS_Store
 # 실험 raw 대용량 (summary json/md는 커밋, 원시 스트림은 제외)
 results/**/*.ndjson

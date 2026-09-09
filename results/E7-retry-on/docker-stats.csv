@@ -1,0 +1,14 @@
+1788245794,heavy-grafana-1,0.12%,82.71MiB / 7.748GiB
+1788245794,heavy-prometheus-1,1.19%,34.32MiB / 7.748GiB
+1788245794,heavy-toxiproxy-1,0.00%,5.191MiB / 7.748GiB
+1788245794,heavy-coupon-api-1,99.78%,480.2MiB / 1GiB
+1788245794,heavy-postgres-1,12.08%,78.89MiB / 1GiB
+1788245794,heavy-redis-1,2.05%,11.63MiB / 256MiB
+1788245794,heavy-mock-external-1,0.12%,219.1MiB / 1GiB
+1788245798,heavy-grafana-1,0.17%,82.71MiB / 7.748GiB
+1788245798,heavy-prometheus-1,0.41%,34.3MiB / 7.748GiB
+1788245798,heavy-toxiproxy-1,0.00%,5.191MiB / 7.748GiB
+1788245798,heavy-coupon-api-1,98.55%,490.1MiB / 1GiB
+1788245798,heavy-postgres-1,2.49%,79.38MiB / 1GiB
+1788245798,heavy-redis-1,5.02%,11.14MiB / 256MiB
+1788245798,heavy-mock-external-1,1.26%,219.2MiB / 1GiB

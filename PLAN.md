@@ -45,18 +45,19 @@
 | `POST /api/coupons` | 캠페인 생성 | 실험 세팅용 (k6 setup, §1.1 MVP) |
 | `GET /api/users/{userId}/coupon-issues` | 사용자 발급 내역 조회 | §1.1 MVP 조회 기능 |
 
-#### 1.2.1 쿠폰 API 계약 (v1 — 2026-08-26, 도메인 구현과 함께 확정)
+#### 1.2.1 쿠폰 API 계약 (v1 — 2026-08-26, 도메인 구현과 함께 확정 / v1.1 — 2026-08-27, E7 Idempotency-Key 추가)
 > 이 절이 쿠폰 API 스펙의 기준이다. 변경 시 이 절을 먼저 수정하고 커밋 제목에 `contract:` 접두 (CLAUDE.md).
 
 | 메서드/경로 | 요청 본문 | 성공 | 에러 |
 |---|---|---|---|
 | `POST /api/coupons` | `{name(≤100자), totalQuantity(>0)}` | 201 `{id, name, totalQuantity, remainingQuantity, createdAt}` | 400(검증 실패) |
 | `GET /api/coupons/{id}` | — | 200 (생성과 동일 본문) | 404 `{error:"coupon_not_found"}` |
-| `POST /api/coupons/{id}/issue` | `{userId(>0)}` | 201 `{result:"issued", couponId, userId, strategy}` | 409 `{error:"sold_out"\|"already_issued"}` · 503 `{error:"retry_exhausted"\|"storage_unavailable"}` · 404 `{error:"coupon_not_found"}` · 500 `{error:"internal_error"}` |
+| `POST /api/coupons/{id}/issue` (`Idempotency-Key` 헤더 선택) | `{userId(>0)}` | 201 `{result:"issued", couponId, userId, strategy}` | 409 `{error:"sold_out"\|"already_issued"\|"request_in_progress"}` · 503 `{error:"retry_exhausted"\|"storage_unavailable"}` · 404 `{error:"coupon_not_found"}` · 500 `{error:"internal_error"}` |
 | `POST /api/coupons/{id}/issue-and-notify` | `{userId(>0)}` | 201 (issue 본문 + `notify`) | issue와 동일 + 504/502(알림 실패 — **발급은 이미 커밋됨**, E7·E8-5의 동기) |
 | `GET /api/users/{userId}/coupon-issues` | — | 200 `[{couponId, issuedAt}]` | — |
 
 - 발급 계열 에러 본문에는 `strategy` 필드가 포함된다(실효 전략 확인용). `retry_exhausted`는 db-optimistic 전용, `storage_unavailable`은 포화/저장소 장애(503) 공통.
+- **E7 Idempotency-Key** (`/issue`만, `issue-and-notify`는 미지원 — 아래 이유): 헤더를 보내면 같은 키의 재시도는 최초 응답(상태코드+본문)을 그대로 재생한다 — 비즈니스 로직 재실행 없음. 아직 처리 중인 동시 재시도는 409 `{error:"request_in_progress"}` (strategy 필드 없음 — 전략 계층 도달 전에 끝나는 요청이라). 헤더 미전송 시 기존 동작과 동일. `issue-and-notify`에 없는 이유: 발급 커밋 후 notify가 실패하면 "커밋 완료 상태에서 예외"가 되어 재시도가 재생이 아니라 already_issued(409)로 새 응답을 만들어버림 — 이 갭은 E8-5(outbox)에서 해소한다.
 - redis 전략은 coupon 행(hot row)을 갱신하지 않으므로 `GET /api/coupons/{id}`의 `remainingQuantity`가 stale할 수 있다. 정합성 검증은 `count(coupon_issue) <= total_quantity` 기준(verify-coupon.sh).
 
 ### 1.3 발급 전략 (설정으로 스위칭)
